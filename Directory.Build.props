@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <!-- WinUI 3 の PRI リソース生成タスク (WinAppSdkExpandPriContent) によるファイル競合 (APPX0002) を防止 -->
+    <BuildInParallel>false</BuildInParallel>
+
+    <!-- Roslyn 常駐コンパイラサーバー (VBCSCompiler) を有効化して C# コンパイルを高速化 -->
+    <UseSharedCompilation>true</UseSharedCompilation>
+
+    <!-- Debug ビルド時の静的アナライザー抑制によるビルド時間短縮 -->
+    <RunAnalyzersDuringBuild Condition="'$(Configuration)' == 'Debug'">false</RunAnalyzersDuringBuild>
+    <EnforceCodeStyleInBuild Condition="'$(Configuration)' == 'Debug'">false</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers Condition="'$(Configuration)' == 'Debug'">false</EnableNETAnalyzers>
+
+    <!-- 高速なポータブル PDB 出力 -->
+    <DebugType Condition="'$(Configuration)' == 'Debug'">portable</DebugType>
+  </PropertyGroup>
+</Project>
