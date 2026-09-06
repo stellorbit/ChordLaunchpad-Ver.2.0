@@ -6,8 +6,8 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
-$SolutionPath = "H:\Antigravity\ChordLaunchpad.slnx"
-$TestProjectPath = "H:\Antigravity\ChordLaunchpad.Tests\ChordLaunchpad.Tests.csproj"
+$SolutionPath = Join-Path $PSScriptRoot "ChordLaunchpad.slnx"
+$TestProjectPath = Join-Path $PSScriptRoot "ChordLaunchpad.Tests\ChordLaunchpad.Tests.csproj"
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 Write-Host "=========================================" -ForegroundColor Cyan

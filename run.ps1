@@ -6,7 +6,7 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectPath = "H:\Antigravity\ChordLaunchpad\ChordLaunchpad.csproj"
+$ProjectPath = Join-Path $PSScriptRoot "ChordLaunchpad\ChordLaunchpad.csproj"
 
 if ($Clean) {
     Write-Host "クリーンを実行しています..." -ForegroundColor Cyan
@@ -23,7 +23,8 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE -ne 0) { exit 1 }
 }
 
-$FoundExe = Get-ChildItem -Path "H:\Antigravity\ChordLaunchpad\bin" -Filter "ChordLaunchpad.exe" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$binDir = Join-Path $PSScriptRoot "ChordLaunchpad\bin"
+$FoundExe = Get-ChildItem -Path $binDir -Filter "ChordLaunchpad.exe" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($FoundExe) {
     $ExePath = $FoundExe.FullName
     Write-Host "ChordLaunchpad を起動しています: $ExePath" -ForegroundColor Cyan

@@ -38,15 +38,3 @@ node_modules/
 __pycache__/
 *.pyc
 
-## Workspace unrelated projects
-LiteBlocker/
-ProToolsShortcuts/
-ProToolsShortcutsUI/
-VolPanChromeEx/
-VolPanChromeEx.zip
-god-slot-app/
-slot-app/
-ASIODriver/
-ASIOSDK/
-Antigravity.yaml
-GEMINI.md
