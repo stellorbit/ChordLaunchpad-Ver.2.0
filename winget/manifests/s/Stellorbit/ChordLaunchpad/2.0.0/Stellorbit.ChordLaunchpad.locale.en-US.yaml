@@ -1,14 +1,16 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.9.0.schema.json
 
-PackageIdentifier: stellorbit.ChordLaunchpad
+PackageIdentifier: Stellorbit.ChordLaunchpad
 PackageVersion: 2.0.0
 PackageLocale: en-US
 Publisher: Stellorbit
 PublisherUrl: https://github.com/stellorbit
 PublisherSupportUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0/issues
+PrivacyUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0/blob/main/PRIVACY_POLICY.md
 PackageName: ChordLaunchpad
 PackageUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0
 License: MIT
+LicenseUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0/blob/main/LICENSE
 ShortDescription: Chord progression sketching assistant with timeline and direct MIDI drag & drop to DAW.
 Description: |-
   ChordLaunchpad is a Windows desktop application for composers, track makers, and music creators
@@ -24,4 +26,3 @@ Tags:
 ReleaseNotesUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0/releases/tag/v2.0.0
 ManifestType: locale
 ManifestVersion: 1.9.0
-
