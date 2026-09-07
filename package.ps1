@@ -46,8 +46,12 @@ if (Test-Path $PriSource) {
 }
 
 $AssetsSource = Join-Path $ScriptDir "ChordLaunchpad\Assets"
+$DestAssets = Join-Path $PublishTemp "Assets"
 if (Test-Path $AssetsSource) {
-    Copy-Item -Path $AssetsSource -Destination (Join-Path $PublishTemp "Assets") -Recurse -Force
+    if (-not (Test-Path $DestAssets)) {
+        New-Item -ItemType Directory -Path $DestAssets | Out-Null
+    }
+    Copy-Item -Path "$AssetsSource\*" -Destination $DestAssets -Recurse -Force
     Write-Host "✔ Assets フォルダを配置しました。" -ForegroundColor DarkCyan
 }
 
@@ -55,8 +59,8 @@ Write-Host "
 ========================================================" -ForegroundColor Magenta
 Write-Host " [Step 2/5] サテライト言語フォルダとデバッグシンボルのクリーンアップ中..." -ForegroundColor Magenta
 Write-Host "========================================================" -ForegroundColor Magenta
-# 日本語と英語以外の言語フォルダを完全削除
-$KeepLanguages = @("ja", "ja-jp", "en", "en-us", "assets", "microsoft.ui.xaml")
+# 日本語(ja-JP)と英語(en-US)以外の言語フォルダを完全削除 (jaなども削除)
+$KeepLanguages = @("ja-jp", "en-us", "assets", "microsoft.ui.xaml")
 $Dirs = Get-ChildItem -Path $PublishTemp -Directory
 $RemovedCount = 0
 foreach ($dir in $Dirs) {
@@ -113,9 +117,9 @@ Set-Content -Path (Join-Path $PortableFolder "はじめにお読みください.
 # 本体ファイルを app フォルダへ移動/コピー
 Copy-Item -Path "$PublishTemp\*" -Destination $AppFolder -Recurse -Force
 
-# ZIP 圧縮
+# ZIP 圧縮 (フォルダごと圧縮して解凍時に親フォルダが保持されるようにする)
 $ZipOutput = Join-Path $DistDir "ChordLaunchpad_v2.0.0_Portable_win-x64.zip"
-Compress-Archive -Path "$PortableFolder\*" -DestinationPath $ZipOutput -CompressionLevel Optimal
+Compress-Archive -Path $PortableFolder -DestinationPath $ZipOutput -CompressionLevel Optimal
 Write-Host "✔ ポータブル版 ZIP 生成完了: $ZipOutput" -ForegroundColor DarkYellow
 
 Write-Host "

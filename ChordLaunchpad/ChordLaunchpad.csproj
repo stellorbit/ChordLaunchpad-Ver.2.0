@@ -17,7 +17,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DefaultLanguage>ja-JP</DefaultLanguage>
-    <SatelliteResourceLanguages>ja;ja-JP;en;en-US</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>ja-JP;en-US</SatelliteResourceLanguages>
     <!-- バージョン・製品情報 -->
     <Version>2.0.0</Version>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
@@ -90,7 +90,7 @@
       <_UnwantedLanguageDirs Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)'))" />
     </ItemGroup>
     <PropertyGroup>
-      <_KeepLanguages>;ja;ja-jp;en;en-us;assets;microsoft.ui.xaml;</_KeepLanguages>
+      <_KeepLanguages>;ja-jp;en-us;assets;microsoft.ui.xaml;</_KeepLanguages>
     </PropertyGroup>
     <ItemGroup>
       <_DirsToRemove Include="@(_UnwantedLanguageDirs)"
