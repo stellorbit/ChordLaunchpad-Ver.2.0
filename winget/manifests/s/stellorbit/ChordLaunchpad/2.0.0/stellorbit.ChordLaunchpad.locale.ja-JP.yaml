@@ -3,7 +3,7 @@
 PackageIdentifier: stellorbit.ChordLaunchpad
 PackageVersion: 2.0.0
 PackageLocale: ja-JP
-Publisher: stellorbit
+Publisher: Stellorbit
 PublisherUrl: https://github.com/stellorbit
 PublisherSupportUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0/issues
 PackageName: ChordLaunchpad
@@ -25,3 +25,4 @@ Tags:
 ReleaseNotesUrl: https://github.com/stellorbit/ChordLaunchpad-Ver.2.0/releases/tag/v2.0.0
 ManifestType: defaultLocale
 ManifestVersion: 1.9.0
+

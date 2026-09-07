@@ -42,20 +42,20 @@
 
 ## Step 3: Package.appxmanifest への ID 転記
 
-プロジェクト内の ChordLaunchpad\Package.appxmanifest を開き、Step 2 で取得した値を設定します：
+プロジェクト内の `ChordLaunchpad\Package.appxmanifest` には、既にパートナーセンターから取得された正式な値が設定されています：
 
-`xml
+```xml
   <Identity
-    Name="<Step 2 で取得した Package/Identity/Name>"
-    Publisher="<Step 2 で取得した Package/Identity/Publisher>"
+    Name="Stellorbit.ChordLaunchpad"
+    Publisher="CN=5035B553-447F-4A5D-A9CF-2DC176508228"
     Version="2.0.0.0" />
 
   <Properties>
     <DisplayName>ChordLaunchpad</DisplayName>
-    <PublisherDisplayName><Step 2 で取得した PublisherDisplayName></PublisherDisplayName>
+    <PublisherDisplayName>Stellorbit</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
-`
+```
 
 ---
 

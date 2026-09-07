@@ -8,13 +8,13 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="stellorbit.ChordLaunchpad"
-    Publisher="CN=stellorbit"
+    Name="Stellorbit.ChordLaunchpad"
+    Publisher="CN=5035B553-447F-4A5D-A9CF-2DC176508228"
     Version="2.0.0.0" />
 
   <Properties>
     <DisplayName>ChordLaunchpad</DisplayName>
-    <PublisherDisplayName>stellorbit</PublisherDisplayName>
+    <PublisherDisplayName>Stellorbit</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
