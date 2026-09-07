@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param (
     [string]$Configuration = "Release",
-    [string]$Platform = "x64"
+    [string]$Platform = "x64",
+    [ValidateSet("All", "Portable", "Msix", "Setup")]
+    [string]$PackageType = "All"
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +12,7 @@ $DistDir = Join-Path $ScriptDir "dist"
 $PublishTemp = Join-Path $ScriptDir "publish_temp"
 $LauncherTemp = Join-Path $ScriptDir "launcher_temp"
 $PortableStage = Join-Path $ScriptDir "portable_stage"
+$MsixStageDir = Join-Path $ScriptDir "msix_stage"
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # 出力・作業ディレクトリの初期化
@@ -17,6 +20,7 @@ if (Test-Path $DistDir) { Remove-Item -Recurse -Force $DistDir }
 if (Test-Path $PublishTemp) { Remove-Item -Recurse -Force $PublishTemp }
 if (Test-Path $LauncherTemp) { Remove-Item -Recurse -Force $LauncherTemp }
 if (Test-Path $PortableStage) { Remove-Item -Recurse -Force $PortableStage }
+Get-ChildItem -Path $ScriptDir -Filter "msix_stage*" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 New-Item -ItemType Directory -Path $DistDir | Out-Null
 
@@ -284,10 +288,47 @@ if (Test-Path $ISCC) {
     Write-Warning "ISCC.exe が見つからなかったため、インストーラー生成をスキップしました。"
 }
 
+# ========================================================
+# [Step 6/6] Microsoft Store 提出用 MSIX パッケージ生成
+# ========================================================
+if ($PackageType -eq "All" -or $PackageType -eq "Msix") {
+    Write-Host "
+========================================================" -ForegroundColor Cyan
+    Write-Host " [Step 6/6] Microsoft Store 提出用 MSIX パッケージを生成中..." -ForegroundColor Cyan
+    Write-Host "========================================================" -ForegroundColor Cyan
+
+    if (Test-Path $MsixStageDir) { Remove-Item -Recurse -Force $MsixStageDir }
+    $MsixProjPath = Join-Path $ScriptDir "ChordLaunchpad\ChordLaunchpad.csproj"
+
+    dotnet publish $MsixProjPath -c $Configuration -r win-x64 `
+        -p:Platform=$Platform `
+        -p:WindowsPackageType=MSIX `
+        -p:EnableMsixTooling=true `
+        -p:GenerateAppxPackageOnBuild=true `
+        -p:AppxPackageSigningEnabled=false `
+        -p:AppxPackageDir="$MsixStageDir\" `
+        -p:BuildInParallel=false
+
+    if ($LASTEXITCODE -eq 0) {
+        $GeneratedMsix = Get-ChildItem -Path $ScriptDir -Filter "*.msix" -Recurse | Where-Object { $_.FullName -like "*msix_stage*" } | Select-Object -First 1
+        if ($GeneratedMsix) {
+            $DestMsix = Join-Path $DistDir "ChordLaunchpad_v2.0.0_x64.msix"
+            Copy-Item $GeneratedMsix.FullName $DestMsix -Force
+            Write-Host "✔ Microsoft Store 提出用 MSIX 生成完了: $DestMsix" -ForegroundColor DarkCyan
+        } else {
+            Write-Warning "MSIX ファイルが見つかりませんでした。"
+        }
+    } else {
+        Write-Warning "MSIX パッケージの生成でエラーが発生しました。"
+    }
+    Get-ChildItem -Path $ScriptDir -Filter "msix_stage*" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 # 一時作業フォルダのクリーンアップ
 Remove-Item -Recurse -Force $PublishTemp -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force $LauncherTemp -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force $PortableStage -ErrorAction SilentlyContinue
+Get-ChildItem -Path $ScriptDir -Filter "msix_stage*" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "
 ========================================================" -ForegroundColor Cyan

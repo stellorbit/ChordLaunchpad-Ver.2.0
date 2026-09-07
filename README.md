@@ -38,6 +38,15 @@ ChordLaunchpad は、作曲家・トラックメイカー・DTMer がコード�
 - ZIP を任意のフォルダーに展開し、直下にある **`ChordLaunchpad.exe`** をダブルクリックするだけで即座に起動します。
 - システム DLL やリソースはすべて `app/` サブフォルダー内に整理・隔離されているため、フォルダー内がスッキリしています。
 
+### 3. winget によるインストール (Windows 10 / 11)
+Windows ターミナルまたは PowerShell から以下のコマンドで直接インストールできます：
+```powershell
+winget install stellorbit.ChordLaunchpad
+```
+
+> **※ Microsoft Store 版について**: 現在、個人開発者アカウント経由での Store 審査・公開を準備中です。公開後は Store からのワンクリック導入および自動更新に対応予定です。
+
+
 ---
 
 ## システム要件
