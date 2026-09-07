@@ -41,10 +41,14 @@ ChordLaunchpad は、作曲家・トラックメイカー・DTMer がコード�
 ### 3. winget によるインストール (Windows 10 / 11)
 Windows ターミナルまたは PowerShell から以下のコマンドで直接インストールできます：
 ```powershell
-winget install stellorbit.ChordLaunchpad
+winget install Stellorbit.ChordLaunchpad
 ```
 
-> **※ Microsoft Store 版について**: 現在、個人開発者アカウント経由での Store 審査・公開を準備中です。公開後は Store からのワンクリック導入および自動更新に対応予定です。
+### 4. Microsoft Store 版（審査・認定中）
+現在、Microsoft パートナーセンターにて公式ストア審査・認定申請中です。  
+認定完了後、Microsoft Store よりワンクリック導入（SmartScreen 警告なし）および自動更新に対応いたします。
+
+![Microsoft Store 認定ステータス](docs/images/store_certification_status.png)
 
 
 ---
