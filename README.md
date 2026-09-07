@@ -21,6 +21,8 @@ ChordLaunchpad は、作曲家・トラックメイカー・DTMer がコード�
 
 ディグリーネーム（ローマ数字）や短縮コマンドでの高速入力、拍や小節構造を反映したビジュアルタイムライン、内蔵シンセによる即時プレビュー、そして生成したコード進行をそのまま DAW（Studio One, Cubase, Pro Tools, Ableton Live, FL Studio 等）のトラックへドラッグ＆ドロップできる強力なワークフローを提供します。
 
+![ChordLaunchpad Ver 2.0 メイン画面](docs/images/app_screenshot.png)
+
 ---
 
 ## ダウンロードと起動方法
@@ -47,8 +49,6 @@ winget install Stellorbit.ChordLaunchpad
 ### 4. Microsoft Store 版（審査・認定中）
 現在、Microsoft パートナーセンターにて公式ストア審査・認定申請中です。  
 認定完了後、Microsoft Store よりワンクリック導入（SmartScreen 警告なし）および自動更新に対応いたします。
-
-![Microsoft Store 認定ステータス](docs/images/store_certification_status.png)
 
 
 ---
