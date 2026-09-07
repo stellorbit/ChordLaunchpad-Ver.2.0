@@ -119,4 +119,14 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <!-- rcedit による WinUI 3 EXE へのアイコンパッチ (Debug ビルドおよびパブリッシュ後) -->
+  <Target Name="PatchIconWithRcedit" AfterTargets="Publish" Condition="Exists('$(MSBuildThisFileDirectory)..\rcedit-x64.exe') and '$(PublishDir)' != ''">
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)..\rcedit-x64.exe&quot; &quot;$(PublishDir)$(TargetName).exe&quot; --set-icon &quot;$(MSBuildThisFileDirectory)Assets\AppIcon.ico&quot;"
+          ContinueOnError="true" />
+  </Target>
+  <Target Name="PatchIconAfterBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and Exists('$(MSBuildThisFileDirectory)..\rcedit-x64.exe') and Exists('$(TargetPath)')">
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)..\rcedit-x64.exe&quot; &quot;$(TargetPath)&quot; --set-icon &quot;$(MSBuildThisFileDirectory)Assets\AppIcon.ico&quot;"
+          ContinueOnError="true" />
+  </Target>
+
 </Project>

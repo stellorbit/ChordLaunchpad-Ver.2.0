@@ -35,7 +35,10 @@ Thumbs.db
 ehthumbs.db
 
 ## Node / Python
-node_modules/
-__pycache__/
-*.pyc
+## Tools
+rcedit-x64.exe
+portable_stage/
+publish_temp/
+launcher_temp/
+
 

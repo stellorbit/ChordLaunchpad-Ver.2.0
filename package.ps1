@@ -165,6 +165,30 @@ if (Test-Path $AssetsSource) {
     Write-Host "✔ Assets フォルダを配置しました。" -ForegroundColor DarkCyan
 }
 
+# rcedit による WinUI 3 本体 EXE (ChordLaunchpad.exe) へのアイコン適用
+$RceditExe = Join-Path $ScriptDir "rcedit-x64.exe"
+if (-not (Test-Path $RceditExe)) {
+    Write-Host "rcedit-x64.exe をダウンロード中..." -ForegroundColor Cyan
+    $RceditUrl = "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe"
+    try {
+        Invoke-WebRequest -Uri $RceditUrl -OutFile $RceditExe -UseBasicParsing
+        Write-Host "✔ rcedit-x64.exe の取得に成功しました。" -ForegroundColor DarkCyan
+    } catch {
+        Write-Warning "rcedit-x64.exe のダウンロードに失敗しました: $_"
+    }
+}
+
+$MainTargetExe = Join-Path $PublishTemp "ChordLaunchpad.exe"
+$AppIcoPath = Join-Path $ScriptDir "ChordLaunchpad\Assets\AppIcon.ico"
+if ((Test-Path $RceditExe) -and (Test-Path $MainTargetExe) -and (Test-Path $AppIcoPath)) {
+    & $RceditExe $MainTargetExe --set-icon $AppIcoPath
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✔ rcedit: 本体 EXE (ChordLaunchpad.exe) に AppIcon.ico を適用しました。" -ForegroundColor Green
+    } else {
+        Write-Warning "rcedit によるアイコン適用でエラーが発生しました (exit code: $LASTEXITCODE)"
+    }
+}
+
 Write-Host "
 ========================================================" -ForegroundColor Magenta
 Write-Host " [Step 2/5] サテライト言語フォルダとデバッグシンボルのクリーンアップ中..." -ForegroundColor Magenta
@@ -192,6 +216,12 @@ dotnet publish $LauncherProj -r win-x64 -c Release -p:Platform=x64 -o $LauncherT
 if ($LASTEXITCODE -ne 0) {
     Write-Error "ランチャーのビルドに失敗しました。"
     exit 1
+}
+
+$LauncherExe = Join-Path $LauncherTemp "ChordLaunchpad.Launcher.exe"
+if ((Test-Path $RceditExe) -and (Test-Path $LauncherExe) -and (Test-Path $AppIcoPath)) {
+    & $RceditExe $LauncherExe --set-icon $AppIcoPath
+    Write-Host "✔ rcedit: ランチャー EXE (ChordLaunchpad.Launcher.exe) に AppIcon.ico を適用しました。" -ForegroundColor Green
 }
 
 Write-Host "
