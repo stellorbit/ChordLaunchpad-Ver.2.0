@@ -17,8 +17,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=.\dist
 OutputBaseFilename=ChordLaunchpad_v2.0.0_Setup
-SetupIconFile=ChordLaunchpad\Assets\AppIcon.ico
-UninstallDisplayIcon={app}\{#MyAppExeName}
+UninstallDisplayIcon={app}\{#MyAppExeName},0
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -35,9 +34,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "portable_stage\ChordLaunchpad_v2.0.0_Portable\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app\Assets\AppIcon.ico"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\app\Assets\AppIcon.ico"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

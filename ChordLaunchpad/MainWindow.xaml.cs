@@ -19,7 +19,11 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
-        AppWindow.SetIcon("Assets/AppIcon.ico");
+        string iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+        if (System.IO.File.Exists(iconPath))
+        {
+            AppWindow.SetIcon(iconPath);
+        }
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1120, 620));
 
         if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)

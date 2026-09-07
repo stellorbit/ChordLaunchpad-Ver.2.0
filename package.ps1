@@ -20,6 +20,116 @@ if (Test-Path $PortableStage) { Remove-Item -Recurse -Force $PortableStage }
 
 New-Item -ItemType Directory -Path $DistDir | Out-Null
 
+# icon.png からの Windows 完全準拠マルチ解像度 AppIcon.ico (16〜128: DIB, 256: PNG) 更新
+$PngSource = Join-Path $ScriptDir "icon.png"
+if (Test-Path $PngSource) {
+    Add-Type -AssemblyName System.Drawing
+    $srcBmp = [System.Drawing.Bitmap]::FromFile($PngSource)
+    $icoPath = Join-Path $ScriptDir "ChordLaunchpad\Assets\AppIcon.ico"
+    $sizes = @(16, 24, 32, 48, 64, 128, 256)
+
+    $ms = New-Object System.IO.MemoryStream
+    $bw = New-Object System.IO.BinaryWriter($ms)
+    $bw.Write([uint16]0)
+    $bw.Write([uint16]1)
+    $bw.Write([uint16]$sizes.Count)
+    for ($i = 0; $i -lt ($sizes.Count * 16); $i++) { $bw.Write([byte]0) }
+
+    $entryIdx = 0
+    foreach ($sz in $sizes) {
+        $destBmp = New-Object System.Drawing.Bitmap($sz, $sz, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+        $g = [System.Drawing.Graphics]::FromImage($destBmp)
+        $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+        $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+        $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+        $g.Clear([System.Drawing.Color]::Transparent)
+        $g.DrawImage($srcBmp, 0, 0, $sz, $sz)
+        $g.Dispose()
+
+        [byte[]]$imgData = $null
+        if ($sz -eq 256) {
+            $pngMs = New-Object System.IO.MemoryStream
+            $destBmp.Save($pngMs, [System.Drawing.Imaging.ImageFormat]::Png)
+            $imgData = $pngMs.ToArray()
+            $pngMs.Dispose()
+        } else {
+            $w = $sz; $h = $sz
+            $andStride = [int]([Math]::Floor(($w + 31) / 32) * 4)
+            $andMaskSize = $andStride * $h
+            $xorSize = $w * $h * 4
+            $dibMs = New-Object System.IO.MemoryStream(40 + $xorSize + $andMaskSize)
+            $dibBw = New-Object System.IO.BinaryWriter($dibMs)
+            $dibBw.Write([uint32]40)
+            $dibBw.Write([int32]$w)
+            $dibBw.Write([int32]($h * 2))
+            $dibBw.Write([uint16]1)
+            $dibBw.Write([uint16]32)
+            $dibBw.Write([uint32]0)
+            $dibBw.Write([uint32]($xorSize + $andMaskSize))
+            $dibBw.Write([int32]0); $dibBw.Write([int32]0)
+            $dibBw.Write([uint32]0); $dibBw.Write([uint32]0)
+
+            $rect = New-Object System.Drawing.Rectangle(0, 0, $w, $h)
+            $bmpData = $destBmp.LockBits($rect, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+            $stride = $bmpData.Stride
+            $pixelBytes = New-Object byte[] ($stride * $h)
+            [System.Runtime.InteropServices.Marshal]::Copy($bmpData.Scan0, $pixelBytes, 0, $pixelBytes.Length)
+            $destBmp.UnlockBits($bmpData)
+
+            for ($y = $h - 1; $y -ge 0; $y--) {
+                $rowOffset = $y * $stride
+                for ($x = 0; $x -lt $w; $x++) {
+                    $pxOffset = $rowOffset + ($x * 4)
+                    $dibBw.Write($pixelBytes[$pxOffset])
+                    $dibBw.Write($pixelBytes[$pxOffset + 1])
+                    $dibBw.Write($pixelBytes[$pxOffset + 2])
+                    $dibBw.Write($pixelBytes[$pxOffset + 3])
+                }
+            }
+
+            for ($y = $h - 1; $y -ge 0; $y--) {
+                $rowOffset = $y * $stride
+                $curByte = [byte]0; $bit = 0; $written = 0
+                for ($x = 0; $x -lt $w; $x++) {
+                    if ($pixelBytes[$rowOffset + ($x * 4) + 3] -eq 0) {
+                        $curByte = $curByte -bor [byte](1 -shl (7 - $bit))
+                    }
+                    $bit++
+                    if ($bit -eq 8) {
+                        $dibBw.Write($curByte); $written++; $curByte = [byte]0; $bit = 0
+                    }
+                }
+                if ($bit -gt 0) { $dibBw.Write($curByte); $written++ }
+                while ($written -lt $andStride) { $dibBw.Write([byte]0); $written++ }
+            }
+            $imgData = $dibMs.ToArray()
+            $dibBw.Dispose()
+            $dibMs.Dispose()
+        }
+        $destBmp.Dispose()
+
+        $offset = $bw.BaseStream.Position
+        $bw.BaseStream.Seek(6 + ($entryIdx * 16), [System.IO.SeekOrigin]::Begin) | Out-Null
+        $bw.Write([byte]($(if ($sz -eq 256) { 0 } else { $sz })))
+        $bw.Write([byte]($(if ($sz -eq 256) { 0 } else { $sz })))
+        $bw.Write([byte]0); $bw.Write([byte]0)
+        $bw.Write([uint16]1); $bw.Write([uint16]32)
+        $bw.Write([uint32]$imgData.Length)
+        $bw.Write([uint32]$offset)
+
+        $bw.BaseStream.Seek($offset, [System.IO.SeekOrigin]::Begin) | Out-Null
+        $bw.Write($imgData)
+        $entryIdx++
+    }
+    $srcBmp.Dispose()
+    $bw.Flush()
+    [System.IO.File]::WriteAllBytes($icoPath, $ms.ToArray())
+    $bw.Dispose()
+    $ms.Dispose()
+    Write-Host "✔ Windows 完全準拠のマルチ解像度 AppIcon.ico を配置・更新しました。" -ForegroundColor DarkCyan
+}
+
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host " [Step 1/5] ChordLaunchpad 本体のパブリッシュ中 (Release)..." -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
