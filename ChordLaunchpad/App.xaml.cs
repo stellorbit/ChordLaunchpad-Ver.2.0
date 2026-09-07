@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -30,17 +33,50 @@ public partial class App : Application
     /// </summary>
     public App()
     {
+        UnhandledException += (s, e) =>
+        {
+            LogException("App.UnhandledException", e.Exception);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+        {
+            LogException("AppDomain.UnhandledException", e.ExceptionObject as Exception);
+        };
+        TaskScheduler.UnobservedTaskException += (s, e) =>
+        {
+            LogException("TaskScheduler.UnobservedTaskException", e.Exception);
+            e.SetObserved();
+        };
+
         InitializeComponent();
+    }
+
+    private static void LogException(string source, Exception? ex)
+    {
+        try
+        {
+            string logPath = System.IO.Path.Combine(AppContext.BaseDirectory, "crash.log");
+            string details = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{source}]\n{ex?.ToString() ?? "null"}\n\n";
+            File.AppendAllText(logPath, details);
+        }
+        catch { }
     }
 
     /// <summary>
     /// Invoked when the application is launched.
     /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
+    /// <param name="args">Details about the launch request到位.</param>
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
-        _window = new MainWindow();
-        MainWindowInstance = _window;
-        _window.Activate();
+        try
+        {
+            _window = new MainWindow();
+            MainWindowInstance = _window;
+            _window.Activate();
+        }
+        catch (Exception ex)
+        {
+            LogException("OnLaunched", ex);
+            throw;
+        }
     }
 }

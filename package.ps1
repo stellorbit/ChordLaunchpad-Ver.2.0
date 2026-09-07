@@ -34,13 +34,40 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# WinUI 3 必須アセット・リソースの配置保証 (PRI ファイル & Assets フォルダ)
+$TargetBinDir = Join-Path $ScriptDir "ChordLaunchpad\bin\x64\$Configuration\net10.0-windows10.0.26100.0\win-x64"
+$PriSource = Join-Path $TargetBinDir "ChordLaunchpad.pri"
+if (Test-Path $PriSource) {
+    Copy-Item $PriSource (Join-Path $PublishTemp "ChordLaunchpad.pri") -Force
+    Copy-Item $PriSource (Join-Path $PublishTemp "resources.pri") -Force
+    Write-Host "✔ PRI リソース (ChordLaunchpad.pri, resources.pri) を配置しました。" -ForegroundColor DarkCyan
+} else {
+    Write-Warning "ChordLaunchpad.pri が bin ディレクトリに見つかりませんでした。"
+}
+
+$AssetsSource = Join-Path $ScriptDir "ChordLaunchpad\Assets"
+if (Test-Path $AssetsSource) {
+    Copy-Item -Path $AssetsSource -Destination (Join-Path $PublishTemp "Assets") -Recurse -Force
+    Write-Host "✔ Assets フォルダを配置しました。" -ForegroundColor DarkCyan
+}
+
 Write-Host "
 ========================================================" -ForegroundColor Magenta
-Write-Host " [Step 2/5] 配布用デバッグシンボル (.pdb) のクリーンアップ中..." -ForegroundColor Magenta
+Write-Host " [Step 2/5] サテライト言語フォルダとデバッグシンボルのクリーンアップ中..." -ForegroundColor Magenta
 Write-Host "========================================================" -ForegroundColor Magenta
-# WinUI 3 の正常動作に必要な MUI フォルダはすべて維持し、サイズ削減のため .pdb のみ削除
+# 日本語と英語以外の言語フォルダを完全削除
+$KeepLanguages = @("ja", "ja-jp", "en", "en-us", "assets", "microsoft.ui.xaml")
+$Dirs = Get-ChildItem -Path $PublishTemp -Directory
+$RemovedCount = 0
+foreach ($dir in $Dirs) {
+    if ($KeepLanguages -notcontains $dir.Name.ToLowerInvariant()) {
+        Remove-Item -Recurse -Force $dir.FullName
+        $RemovedCount++
+    }
+}
+# 配布サイズ削減のため .pdb を削除
 Get-ChildItem -Path $PublishTemp -Filter "*.pdb" -Recurse | Remove-Item -Force
-Write-Host "✔ デバッグシンボル (.pdb) を削除しました。" -ForegroundColor DarkMagenta
+Write-Host "✔ 不要言語フォルダ ($RemovedCount 個) およびデバッグシンボルを削除しました。" -ForegroundColor DarkMagenta
 
 Write-Host "
 ========================================================" -ForegroundColor Blue

@@ -5,9 +5,10 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>ChordLaunchpad</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64;ARM64</Platforms>
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
-    <PublishProfile Condition="Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
+    <Platforms>x64</Platforms>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <PublishProfile>Properties\PublishProfiles\win-x64.pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
@@ -16,6 +17,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DefaultLanguage>ja-JP</DefaultLanguage>
+    <SatelliteResourceLanguages>ja;ja-JP;en;en-US</SatelliteResourceLanguages>
     <!-- バージョン・製品情報 -->
     <Version>2.0.0</Version>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
@@ -29,15 +31,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\SplashScreen.scale-200.png" />
-    <Content Include="Assets\LockScreenLogo.scale-200.png" />
-    <Content Include="Assets\Square150x150Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Content Include="Assets\Square44x44Logo.targetsize-48_altform-lightunplated.png" />
-    <Content Include="Assets\StoreLogo.png" />
-    <Content Include="Assets\AppIcon.ico" />
-    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -86,5 +83,39 @@
     <!-- WinUI 3 (Windows App SDK) は XAML/WinRT/COM メタデータ解決のため Trimming 無効化が必須 (有効時は 0xc000027b クラッシュ) -->
     <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
+
+  <!-- 日本語(ja/ja-JP)と英語(en/en-US)以外の不要言語サテライトフォルダを出力から完全削除 -->
+  <Target Name="RemoveUnwantedSatelliteCultures" AfterTargets="Build">
+    <ItemGroup>
+      <_UnwantedLanguageDirs Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_KeepLanguages>;ja;ja-jp;en;en-us;assets;microsoft.ui.xaml;</_KeepLanguages>
+    </PropertyGroup>
+    <ItemGroup>
+      <_DirsToRemove Include="@(_UnwantedLanguageDirs)"
+                     Condition="!$(_KeepLanguages.Contains(';$([System.IO.Path]::GetFileName(&quot;%(Identity)&quot;).ToLowerInvariant());'))" />
+    </ItemGroup>
+    <RemoveDir Directories="@(_DirsToRemove)" ContinueOnError="true" />
+  </Target>
+
+  <!-- パブリッシュ時に PRI ファイル (ChordLaunchpad.pri, resources.pri) および Assets フォルダを確実に出力先へコピー -->
+  <Target Name="CopyPriAndAssetsToPublish" AfterTargets="Publish">
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pri"
+          DestinationFiles="$(PublishDir)$(TargetName).pri"
+          Condition="Exists('$(TargetDir)$(TargetName).pri') and '$(PublishDir)' != ''"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pri"
+          DestinationFiles="$(PublishDir)resources.pri"
+          Condition="Exists('$(TargetDir)$(TargetName).pri') and '$(PublishDir)' != ''"
+          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <_AssetFiles Include="$(ProjectDir)Assets\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_AssetFiles)"
+          DestinationFolder="$(PublishDir)Assets\%(RecursiveDir)"
+          Condition="'@(_AssetFiles)' != '' and '$(PublishDir)' != ''"
+          SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
