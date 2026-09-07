@@ -87,18 +87,4 @@
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
   </PropertyGroup>
 
-  <!-- 日本語(ja/ja-JP)と英語(en/en-US)以外の不要言語サテライトフォルダをビルド出力から完全削除 -->
-  <Target Name="RemoveUnwantedSatelliteCultures" AfterTargets="Build">
-    <ItemGroup>
-      <_UnwantedLanguageDirs Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)'))" />
-    </ItemGroup>
-    <PropertyGroup>
-      <_KeepLanguages>;ja;ja-jp;en;en-us;assets;microsoft.ui.xaml;</_KeepLanguages>
-    </PropertyGroup>
-    <ItemGroup>
-      <_DirsToRemove Include="@(_UnwantedLanguageDirs)"
-                     Condition="!$(_KeepLanguages.Contains(';$([System.IO.Path]::GetFileName(&quot;%(Identity)&quot;).ToLowerInvariant());'))" />
-    </ItemGroup>
-    <RemoveDir Directories="@(_DirsToRemove)" ContinueOnError="true" />
-  </Target>
 </Project>

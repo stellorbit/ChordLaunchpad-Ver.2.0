@@ -36,21 +36,11 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "
 ========================================================" -ForegroundColor Magenta
-Write-Host " [Step 2/5] 不要サテライト言語フォルダとシンボルの整理中..." -ForegroundColor Magenta
+Write-Host " [Step 2/5] 配布用デバッグシンボル (.pdb) のクリーンアップ中..." -ForegroundColor Magenta
 Write-Host "========================================================" -ForegroundColor Magenta
-# 日本語と英語以外の言語フォルダを削除
-$KeepLanguages = @("ja", "ja-jp", "en", "en-us", "assets", "microsoft.ui.xaml")
-$Dirs = Get-ChildItem -Path $PublishTemp -Directory
-$RemovedCount = 0
-foreach ($dir in $Dirs) {
-    if ($KeepLanguages -notcontains $dir.Name.ToLowerInvariant()) {
-        Remove-Item -Recurse -Force $dir.FullName
-        $RemovedCount++
-    }
-}
-# 配布サイズ削減のため .pdb を削除
+# WinUI 3 の正常動作に必要な MUI フォルダはすべて維持し、サイズ削減のため .pdb のみ削除
 Get-ChildItem -Path $PublishTemp -Filter "*.pdb" -Recurse | Remove-Item -Force
-Write-Host "✔ 不要な言語フォルダ ($RemovedCount 個) およびデバッグシンボルを削除しました。" -ForegroundColor DarkMagenta
+Write-Host "✔ デバッグシンボル (.pdb) を削除しました。" -ForegroundColor DarkMagenta
 
 Write-Host "
 ========================================================" -ForegroundColor Blue
