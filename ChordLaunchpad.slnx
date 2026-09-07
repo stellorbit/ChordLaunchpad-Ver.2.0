@@ -4,15 +4,13 @@
     <Platform Name="Any CPU" />
   </Configurations>
   <Project Path="ChordLaunchpad/ChordLaunchpad.csproj">
-    <Platform Solution="*|Any CPU" Project="x64" />
-    <Platform Solution="*|x64" Project="x64" />
+    <Platform Project="x64" />
   </Project>
   <Project Path="ChordLaunchpad.Tests/ChordLaunchpad.Tests.csproj">
     <Build Solution="*|Any CPU" Project="false" />
     <Platform Solution="*|x64" Project="x64" />
   </Project>
   <Project Path="ChordLaunchpad.Launcher/ChordLaunchpad.Launcher.csproj">
-    <Platform Solution="*|Any CPU" Project="x64" />
-    <Platform Solution="*|x64" Project="x64" />
+    <Platform Project="x64" />
   </Project>
 </Solution>

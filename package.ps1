@@ -25,7 +25,7 @@ Write-Host " [Step 1/5] ChordLaunchpad 本体のパブリッシュ中 (Release).
 Write-Host "========================================================" -ForegroundColor Cyan
 $ProjPath = Join-Path $ScriptDir "ChordLaunchpad\ChordLaunchpad.csproj"
 dotnet publish $ProjPath -c $Configuration -r win-x64 --self-contained true `
-    -p:Platform=$Platform -p:PublishReadyToRun=true -p:PublishTrimmed=true `
+    -p:Platform=$Platform -p:PublishReadyToRun=true -p:PublishTrimmed=false `
     -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -p:BuildInParallel=false `
     -o $PublishTemp
 
@@ -47,7 +47,7 @@ Write-Host "
 Write-Host " [Step 3/5] 超軽量ネイティブ起動ランチャー (AOT) をビルド中..." -ForegroundColor Blue
 Write-Host "========================================================" -ForegroundColor Blue
 $LauncherProj = Join-Path $ScriptDir "ChordLaunchpad.Launcher\ChordLaunchpad.Launcher.csproj"
-dotnet publish $LauncherProj -r win-x64 -c Release -o $LauncherTemp
+dotnet publish $LauncherProj -r win-x64 -c Release -p:Platform=x64 -o $LauncherTemp
 if ($LASTEXITCODE -ne 0) {
     Write-Error "ランチャーのビルドに失敗しました。"
     exit 1

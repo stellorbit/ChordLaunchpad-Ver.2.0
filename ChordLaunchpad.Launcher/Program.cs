@@ -11,7 +11,7 @@ internal static class Program
     private static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
 
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         try
         {
@@ -32,6 +32,15 @@ internal static class Program
                     WorkingDirectory = appDir,
                     UseShellExecute = true
                 };
+
+                if (args != null)
+                {
+                    foreach (var arg in args)
+                    {
+                        startInfo.ArgumentList.Add(arg);
+                    }
+                }
+
                 Process.Start(startInfo);
             }
             else

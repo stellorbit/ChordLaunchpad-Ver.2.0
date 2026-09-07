@@ -83,8 +83,8 @@
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <!-- WinUI 3 (Windows App SDK) は XAML/WinRT/COM メタデータ解決のため Trimming 無効化が必須 (有効時は 0xc000027b クラッシュ) -->
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 
 </Project>
