@@ -69,9 +69,12 @@ Windows ターミナルまたは PowerShell から以下のコマンドで直接
 winget install Stellorbit.ChordLaunchpad
 ```
 
-### 4. Microsoft Store 版（審査・認定中）
-現在、Microsoft パートナーセンターにて公式ストア審査・認定申請中です。  
-認定完了後、Microsoft Store よりワンクリック導入（SmartScreen 警告なし）および自動更新に対応いたします。
+### 4. Microsoft Store 版
+Microsoft Storeからダウンロード可能です。
+更新直後は認定にタイムラグがあるため、最新版をすぐにダウンロードできない可能性があります。
+<a href="https://apps.microsoft.com/detail/9MXX63FMGK4S?referrer=appbadge&mode=full" target="_blank"  rel="noopener noreferrer">
+	<img src="https://get.microsoft.com/images/ja%20dark.svg" width="200"/>
+</a>
 
 
 ---
