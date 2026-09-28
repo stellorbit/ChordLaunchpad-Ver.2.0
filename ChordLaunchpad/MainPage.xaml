@@ -234,23 +234,19 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <!-- BPM & Tap Tempo (Pro Tools style) -->
+                    <!-- BPM & Tap Tempo Button -->
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <Border x:Name="BpmLabelBorder"
-                                DoubleTapped="BpmLabel_DoubleTapped"
-                                KeyDown="BpmLabel_KeyDown"
-                                GotFocus="BpmLabel_GotFocus"
-                                LostFocus="BpmLabel_LostFocus"
-                                IsTabStop="True"
-                                CornerRadius="4"
-                                Padding="4,2"
-                                Background="Transparent"
-                                BorderThickness="1"
-                                BorderBrush="Transparent"
-                                ToolTipService.ToolTip="ダブルクリックしてフォーカス後、[T]キーをテンポよく叩いてタップテンポ設定 (Pro Tools仕様)">
-                            <TextBlock x:Name="BpmLabelText" Text="BPM:" VerticalAlignment="Center" FontSize="11" />
-                        </Border>
-                        <NumberBox x:Name="BpmBox" Value="120" Minimum="40" Maximum="300" SpinButtonPlacementMode="Hidden" Width="72" Height="25" FontSize="11" ValueChanged="BpmBox_ValueChanged" KeyDown="BpmBox_KeyDown" />
+                        <TextBlock x:Name="BpmLabelText" Text="BPM:" VerticalAlignment="Center" FontSize="11" />
+                        <NumberBox x:Name="BpmBox" Value="120" Minimum="40" Maximum="300" SpinButtonPlacementMode="Hidden" Width="68" Height="25" FontSize="11" ValueChanged="BpmBox_ValueChanged" KeyDown="BpmBox_KeyDown" />
+                        <Button x:Name="TapTempoButton" Click="TapTempoButton_Click"
+                                PreviewKeyDown="TapTempoButton_PreviewKeyDown" KeyDown="TapTempoButton_KeyDown"
+                                Height="25" Padding="7,0" FontSize="11"
+                                ToolTipService.ToolTip="クリックまたは[T]キーをテンポよく叩いてタップテンポ設定 (Enterで確定してタイムラインへ)">
+                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                <FontIcon Glyph="&#xE8D6;" FontSize="10" />
+                                <TextBlock x:Name="TapTempoButtonText" Text="Tap" FontSize="11" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Tone -->
@@ -325,9 +321,11 @@
             </Grid.ColumnDefinitions>
 
             <!-- Column 0 (Left): Compact Text Input -->
-            <Border Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            <Border x:Name="InputOuterBorder" Grid.Column="0"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                    CornerRadius="6" Padding="9">
+                    CornerRadius="6" Padding="9"
+                    GotFocus="FocusContainer_GotFocus" LostFocus="FocusContainer_LostFocus">
                 <Grid RowSpacing="6">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -356,9 +354,11 @@
                 </Grid.RowDefinitions>
 
                 <!-- DAW Timeline Container -->
-                <Border x:Name="TimelineOuterBorder" Grid.Row="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                <Border x:Name="TimelineOuterBorder" Grid.Row="0"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
                         CornerRadius="6" Padding="10"
+                        GotFocus="FocusContainer_GotFocus" LostFocus="FocusContainer_LostFocus"
                         AllowDrop="True" DragOver="Timeline_DragOver" Drop="Timeline_Drop">
                     <Grid RowSpacing="5">
                         <Grid.RowDefinitions>

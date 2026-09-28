@@ -113,10 +113,12 @@ public sealed partial class MainPage : Page
                 _isInitialized = true;
                 ApplyInput(saveUndo: false);
                 await InitializeStartupProjectAsync();
+                UpdateFocusVisuals();
             }
             else
             {
                 UpdateTimelineBackgroundGrid();
+                UpdateFocusVisuals();
             }
         };
 
@@ -131,6 +133,7 @@ public sealed partial class MainPage : Page
         {
             _lastGridIsDark = null; // テーマ変更時はブラシ再生成
             UpdateTimelineBackgroundGrid();
+            UpdateFocusVisuals();
         };
 
         Unloaded += (_, _) =>
@@ -373,6 +376,57 @@ public sealed partial class MainPage : Page
         }
 
         UpdateGuideAndSuggestions();
+
+        // 反映完了後、操作フォーカスをタイムラインへ移す
+        TimelineScrollViewer?.Focus(FocusState.Programmatic);
+        UpdateFocusVisuals();
+    }
+
+    // ==========================================
+    // テキスト・タイムラインのフォーカス視覚化
+    // ==========================================
+
+    private static bool IsChildOf(DependencyObject? child, DependencyObject parent)
+    {
+        while (child != null)
+        {
+            if (ReferenceEquals(child, parent)) return true;
+            child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(child);
+        }
+        return false;
+    }
+
+    private void FocusContainer_GotFocus(object sender, RoutedEventArgs e)
+    {
+        UpdateFocusVisuals();
+    }
+
+    private void FocusContainer_LostFocus(object sender, RoutedEventArgs e)
+    {
+        DispatcherQueue?.TryEnqueue(UpdateFocusVisuals);
+    }
+
+    private void UpdateFocusVisuals()
+    {
+        var focused = FocusManager.GetFocusedElement(this.XamlRoot) as DependencyObject;
+        bool isInputFocused = focused != null && InputOuterBorder != null && IsChildOf(focused, InputOuterBorder);
+        bool isTimelineFocused = focused != null && TimelineOuterBorder != null && IsChildOf(focused, TimelineOuterBorder);
+
+        if (InputOuterBorder != null)
+        {
+            InputOuterBorder.BorderBrush = isInputFocused
+                ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["AccentFillColorDefaultBrush"]
+                : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            InputOuterBorder.BorderThickness = isInputFocused ? new Thickness(1.5) : new Thickness(1);
+        }
+
+        if (TimelineOuterBorder != null)
+        {
+            TimelineOuterBorder.BorderBrush = isTimelineFocused
+                ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["AccentFillColorDefaultBrush"]
+                : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            TimelineOuterBorder.BorderThickness = isTimelineFocused ? new Thickness(1.5) : new Thickness(1);
+        }
     }
 
     private void RefreshTimeline()
@@ -1623,6 +1677,35 @@ public sealed partial class MainPage : Page
             return;
         }
 
+        // タップテンポボタンまたはBPM入力欄にフォーカスがある場合、または現在タップ計測中の場合
+        bool isTapTarget = (TapTempoButton != null && ReferenceEquals(focused, TapTempoButton)) ||
+                           (BpmBox != null && ReferenceEquals(focused, BpmBox));
+        bool isTappingInProgress = _tapTimestamps.Count > 0 &&
+                                   ((System.Diagnostics.Stopwatch.GetTimestamp() - _tapTimestamps[^1]) /
+                                    (double)System.Diagnostics.Stopwatch.Frequency) <= MaxTapIntervalSec;
+
+        if (isTapTarget || isTappingInProgress)
+        {
+            if (e.Key == VirtualKey.T)
+            {
+                e.Handled = true;
+                ProcessTapTempo();
+                return;
+            }
+            if (e.Key == VirtualKey.Enter || e.Key == VirtualKey.Escape)
+            {
+                e.Handled = true;
+                _tapTimestamps.Clear();
+                TimelineScrollViewer?.Focus(FocusState.Programmatic);
+                UpdateFocusVisuals();
+                bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
+                StatusTextBlock.Text = isEn
+                    ? $"BPM set to {CurrentBpm}"
+                    : $"BPM を {CurrentBpm} に確定しました";
+                return;
+            }
+        }
+
         var isCtrl = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
         var isAlt = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
         var isShift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
@@ -1784,9 +1867,14 @@ public sealed partial class MainPage : Page
         var isAlt = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
         var isShift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
-        // タップテンポ待機枠にフォーカスがある時は T キーをズームに奪われないようにする
+        // タップボタン/BPM入力欄にフォーカスがある時、またはタップ計測中の時は T キーをズームに奪われないようにする
         var focused = FocusManager.GetFocusedElement(this.XamlRoot);
-        if (ReferenceEquals(focused, BpmLabelBorder) && e.Key == VirtualKey.T)
+        bool isTapTarget = (TapTempoButton != null && ReferenceEquals(focused, TapTempoButton)) ||
+                           (BpmBox != null && ReferenceEquals(focused, BpmBox));
+        bool isTappingInProgress = _tapTimestamps.Count > 0 &&
+                                   ((System.Diagnostics.Stopwatch.GetTimestamp() - _tapTimestamps[^1]) /
+                                    (double)System.Diagnostics.Stopwatch.Frequency) <= MaxTapIntervalSec;
+        if ((isTapTarget || isTappingInProgress) && e.Key == VirtualKey.T)
         {
             return false;
         }
@@ -2114,9 +2202,12 @@ public sealed partial class MainPage : Page
         InputTextBox.PlaceholderText = isEn
             ? "e.g.: 4mas 1 2 5, FM7 Em7 Dm7 G7 (both degrees and chord names supported)"
             : "例: 4mas 1 2 5、FM7 Em7 Dm7 G7 (ディグリー・コード名どちらもOK)";
-        ToolTipService.SetToolTip(BpmLabelBorder, isEn
-            ? "Double-click to focus, then tap [T] key in tempo to set BPM (Pro Tools style)"
-            : "ダブルクリックしてフォーカス後、[T]キーをテンポよく叩いてタップテンポ設定 (Pro Tools仕様)");
+        if (TapTempoButton != null)
+        {
+            ToolTipService.SetToolTip(TapTempoButton, isEn
+                ? "Click or tap [T] key in tempo to set BPM (Press Enter to finish)"
+                : "クリックまたは[T]キーをテンポよく叩いてタップテンポ設定 (Enterで確定してタイムラインへ)");
+        }
 
         // タイムライン描画を言語切り替えに合わせて再描画（起動完了後の動的言語切替時のみ実行し、初期起動時の重複を完全排除）
         if (_isInitialized)
@@ -3140,7 +3231,7 @@ public sealed partial class MainPage : Page
     private void BpmBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
     {
         // BPM値の変更は再生テンポにのみ影響するため、コード進行の再パースやタイムライン再構築は一切行わない（完全ゼロ負荷）
-        RemoveFocusFromTopBar();
+        // ※ ValueChanged のたびにフォーカスを外すとタップテンポや入力が中断されるため、フォーカス移動は行わない
     }
 
     private void BassComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -3168,33 +3259,19 @@ public sealed partial class MainPage : Page
     }
 
     // ==========================================
-    // タップテンポ (Pro Tools スタイル)
+    // タップテンポ (Tap Tempo)
     // ==========================================
 
     private readonly List<long> _tapTimestamps = new();
     private const double MaxTapIntervalSec = 2.0;
 
-    private void BpmLabel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    private void TapTempoButton_Click(object sender, RoutedEventArgs e)
     {
-        e.Handled = true;
-        BpmLabelBorder.Focus(FocusState.Programmatic);
+        TapTempoButton?.Focus(FocusState.Programmatic);
+        ProcessTapTempo();
     }
 
-    private void BpmLabel_GotFocus(object sender, RoutedEventArgs e)
-    {
-        BpmLabelBorder.BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
-        BpmLabelBorder.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorSecondaryBrush"];
-        StatusTextBlock.Text = "タップテンポ待機中: [T]キーをテンポよく叩いてください (Enterで確定)";
-    }
-
-    private void BpmLabel_LostFocus(object sender, RoutedEventArgs e)
-    {
-        BpmLabelBorder.BorderBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        BpmLabelBorder.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        _tapTimestamps.Clear();
-    }
-
-    private void BpmLabel_KeyDown(object sender, KeyRoutedEventArgs e)
+    private void TapTempoButton_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.T)
         {
@@ -3204,7 +3281,49 @@ public sealed partial class MainPage : Page
         else if (e.Key == VirtualKey.Enter || e.Key == VirtualKey.Escape)
         {
             e.Handled = true;
-            TimelineItemsControl.Focus(FocusState.Programmatic);
+            _tapTimestamps.Clear();
+            TimelineScrollViewer?.Focus(FocusState.Programmatic);
+            UpdateFocusVisuals();
+            bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
+            StatusTextBlock.Text = isEn
+                ? $"BPM set to {CurrentBpm}"
+                : $"BPM を {CurrentBpm} に確定しました";
+        }
+        else if (e.Key == VirtualKey.Space)
+        {
+            e.Handled = true;
+            _tapTimestamps.Clear();
+            TimelineScrollViewer?.Focus(FocusState.Programmatic);
+            UpdateFocusVisuals();
+            TogglePlayBack();
+        }
+    }
+
+    private void TapTempoButton_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.T)
+        {
+            e.Handled = true;
+            ProcessTapTempo();
+        }
+        else if (e.Key == VirtualKey.Enter || e.Key == VirtualKey.Escape)
+        {
+            e.Handled = true;
+            _tapTimestamps.Clear();
+            TimelineScrollViewer?.Focus(FocusState.Programmatic);
+            UpdateFocusVisuals();
+            bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
+            StatusTextBlock.Text = isEn
+                ? $"BPM set to {CurrentBpm}"
+                : $"BPM を {CurrentBpm} に確定しました";
+        }
+        else if (e.Key == VirtualKey.Space)
+        {
+            e.Handled = true;
+            _tapTimestamps.Clear();
+            TimelineScrollViewer?.Focus(FocusState.Programmatic);
+            UpdateFocusVisuals();
+            TogglePlayBack();
         }
     }
 
@@ -3218,12 +3337,16 @@ public sealed partial class MainPage : Page
         else if (e.Key == VirtualKey.Enter || e.Key == VirtualKey.Escape)
         {
             e.Handled = true;
-            RemoveFocusFromTopBar();
+            _tapTimestamps.Clear();
+            TimelineScrollViewer?.Focus(FocusState.Programmatic);
+            UpdateFocusVisuals();
         }
         else if (e.Key == VirtualKey.Space)
         {
             e.Handled = true;
-            RemoveFocusFromTopBar();
+            _tapTimestamps.Clear();
+            TimelineScrollViewer?.Focus(FocusState.Programmatic);
+            UpdateFocusVisuals();
             TogglePlayBack();
         }
     }
@@ -3251,6 +3374,7 @@ public sealed partial class MainPage : Page
         // タップフィードバック音（短いクリック）
         AudioEngine.Instance.PlayNotes(new[] { 76 }, 40, _currentTone);
 
+        bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
         if (_tapTimestamps.Count >= 2)
         {
             var intervals = new List<double>();
@@ -3264,12 +3388,16 @@ public sealed partial class MainPage : Page
             {
                 var calculatedBpm = Math.Clamp(Math.Round(60.0 / avgSec), 40, 300);
                 BpmBox.Value = calculatedBpm;
-                StatusTextBlock.Text = $"タップテンポ: {calculatedBpm} BPM ({_tapTimestamps.Count} taps)";
+                StatusTextBlock.Text = isEn
+                    ? $"Tap Tempo: {calculatedBpm} BPM ({_tapTimestamps.Count} taps) [Press Enter to finish]"
+                    : $"タップテンポ: {calculatedBpm} BPM ({_tapTimestamps.Count} taps) [Enterで確定]";
             }
         }
         else
         {
-            StatusTextBlock.Text = "タップテンポ: 1 回目を記録... 続けて[T]キーを叩いてください";
+            StatusTextBlock.Text = isEn
+                ? "Tap Tempo: 1st tap recorded. Keep tapping [Tap] or [T]... (Press Enter to finish)"
+                : "タップテンポ: 1 回目を記録... 続けて[Tap]または[T]キーを叩いてください (Enterで確定)";
         }
     }
 
