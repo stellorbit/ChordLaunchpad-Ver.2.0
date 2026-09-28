@@ -41,4 +41,7 @@ portable_stage/
 publish_temp/
 launcher_temp/
 
+## AI Agent YAML
+./antigravity
+
 

@@ -1,0 +1,47 @@
+version: "2.0"
+workflow:
+  id: "3node-adversarial-audit"
+  name: "3-Node Adversarial Code Audit"
+  trigger: "manual"
+  inputs:
+    task_spec:
+      type: "string"
+      description: "実装要件または修正対象コードの仕様"
+
+  steps:
+    # --- Step 1: Draft Generation ---
+    - id: "step_draft"
+      agent: "draft-generator"
+      input:
+        prompt: "${workflow.inputs.task_spec}"
+
+    # --- Step 2: Adversarial Audit ---
+    - id: "step_audit"
+      agent: "adversarial-critic"
+      input:
+        prompt: |
+          ### 元のタスク仕様:
+          ${workflow.inputs.task_spec}
+
+          ### 提出されたドラフト:
+          ${steps.step_draft.output}
+
+    # --- Step 3: Refactoring (指摘がある場合のみ実行) ---
+    - id: "step_refactor"
+      agent: "code-refactorer"
+      condition: "${steps.step_audit.output.is_production_ready == false}"
+      input:
+        prompt: |
+          ### 元のタスク仕様:
+          ${workflow.inputs.task_spec}
+
+          ### 初期ドラフト:
+          ${steps.step_draft.output}
+
+          ### 監査指摘事項:
+          ${steps.step_audit.output}
+
+  outputs:
+    draft: "${steps.step_draft.output}"
+    audit_report: "${steps.step_audit.output}"
+    final_code: "${steps.step_refactor.output ?? steps.step_draft.output}"

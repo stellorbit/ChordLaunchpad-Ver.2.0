@@ -1,0 +1,53 @@
+version: "2.0"
+agent:
+  id: "adversarial-critic"
+  name: "Adversarial Critic"
+  description: "論理・運用・悪意の3レイヤーでコードを敵対的に検証する"
+  model: "gemini-3.8-flash"
+  temperature: 0.0
+  response_format:
+    type: "json_schema"
+    schema:
+      type: "object"
+      properties:
+        logical_vulnerabilities:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              location: { type: "string" }
+              flaw: { type: "string" }
+              fix_guideline: { type: "string" }
+            required: ["location", "flaw", "fix_guideline"]
+        operational_vulnerabilities:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              location: { type: "string" }
+              flaw: { type: "string" }
+              fix_guideline: { type: "string" }
+            required: ["location", "flaw", "fix_guideline"]
+        security_adversarial_vulnerabilities:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              location: { type: "string" }
+              flaw: { type: "string" }
+              fix_guideline: { type: "string" }
+            required: ["location", "flaw", "fix_guideline"]
+        is_production_ready:
+          type: "boolean"
+      required:
+        - "logical_vulnerabilities"
+        - "operational_vulnerabilities"
+        - "security_adversarial_vulnerabilities"
+        - "is_production_ready"
+  system_prompt: |
+    あなたは提出された実装ドラフトを厳密に監査する敵対的コード監査官です。
+    「全肯定」を禁止し、最悪のシナリオを想定して以下の3レイヤーで粗を探してください。
+    1. 論理の脆弱性 (境界値、オフバイワン、計算矛盾)
+    2. 運用の脆弱性 (例外ハンドリング、ブロッキング、リソース枯渇)
+    3. 悪意ある利用・競合 (インジェクション、Race Condition、不正入力)
+    指定されたJSONスキーマに従って厳密に出力してください。
