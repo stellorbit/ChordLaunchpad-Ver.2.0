@@ -68,6 +68,7 @@ public sealed partial class TemplateDialog : ContentDialog
     private readonly string _key;
     private readonly MusicalMode _mode;
     private readonly PlaybackTone _tone;
+    private readonly int _bpm;
     private readonly string? _currentProgression;
     private CancellationTokenSource? _previewCts;
     private bool _isPlayingPreview;
@@ -80,12 +81,13 @@ public sealed partial class TemplateDialog : ContentDialog
 
     public ProgressionTemplate? SelectedTemplate => (TemplateListView.SelectedItem as TemplateItemViewModel)?.Template;
 
-    public TemplateDialog(string key, MusicalMode mode, PlaybackTone tone, string? currentProgression = null)
+    public TemplateDialog(string key, MusicalMode mode, PlaybackTone tone, string? currentProgression = null, int bpm = 120)
     {
         InitializeComponent();
         _key = key;
         _mode = mode;
         _tone = tone;
+        _bpm = Math.Clamp(bpm, 40, 300);
         _currentProgression = currentProgression;
 
         bool isEn = LocalizationService.IsEnglish;
@@ -379,12 +381,15 @@ public sealed partial class TemplateDialog : ContentDialog
 
         try
         {
+            // 試聴機能で鳴らす音を2拍 (2 beats) に設定
+            var twoBeatsDurationMs = 2.0 * (60_000.0 / _bpm);
+
             foreach (var chord in chords)
             {
                 if (ct.IsCancellationRequested) break;
                 var notes = MusicEngine.MidiNoteNumbers(chord);
-                AudioEngine.Instance.PlayNotes(notes, 550, _tone);
-                await Task.Delay(550, ct);
+                AudioEngine.Instance.PlayNotes(notes, twoBeatsDurationMs, _tone);
+                await Task.Delay((int)twoBeatsDurationMs, ct);
             }
         }
         catch (OperationCanceledException) { }

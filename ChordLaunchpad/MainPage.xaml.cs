@@ -2825,7 +2825,7 @@ public sealed partial class MainPage : Page
             ? MusicEngine.ProgressionToInput(_currentChords, NotationPreference.Symbol, "4/4", 4)
             : InputTextBox.Text;
 
-        var dialog = new TemplateDialog(CurrentKey, CurrentMode, _currentTone, currentProgression)
+        var dialog = new TemplateDialog(CurrentKey, CurrentMode, _currentTone, currentProgression, CurrentBpm)
         {
             XamlRoot = this.XamlRoot
         };
