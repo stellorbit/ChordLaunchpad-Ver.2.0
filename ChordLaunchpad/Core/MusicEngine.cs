@@ -885,35 +885,10 @@ public static partial class MusicEngine
             return (structuredTokens, true, errors);
         }
 
-        // 単一行（パイプ・改行なし）の入力
+        // 単一行（パイプ・改行なし）の入力: 規定音価（fallbackDuration）を適用
         var tokens = new List<ParsedToken>();
         string? prevVal = null;
         var parts = WhitespaceOrCommaSplitRegex().Split(normalized).Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
-
-        // 4個などの一般的な個数の場合、小節等分（各1拍等）を適用可能か判定
-        if (parts.Count > 0 && !parts.Contains("-") && parts.All(p => ParseExplicitDurationToken(p) == null))
-        {
-            var errs = new List<ParseError>();
-            var distributed = DistributeBarTokens(parts, beatsPerBar, inputSlotsPerBar, timeSignature, errs);
-            var structuredTokens = new List<ParsedToken>();
-            bool allMapped = true;
-
-            foreach (var entry in distributed)
-            {
-                var mapped = DurationFromBeats(entry.Beats, timeSignature);
-                if (mapped == null)
-                {
-                    allMapped = false;
-                    break;
-                }
-                structuredTokens.Add(new ParsedToken(entry.Value, mapped.Value.Duration, true, mapped.Value.Dotted));
-            }
-
-            if (allMapped && structuredTokens.Count > 0)
-            {
-                return (structuredTokens, true, errs);
-            }
-        }
 
         foreach (var part in parts)
         {

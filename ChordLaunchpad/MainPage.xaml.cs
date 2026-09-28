@@ -95,8 +95,8 @@ public sealed partial class MainPage : Page
         }
         KeyComboBox.SelectedItem = "C";
 
-        // 初期テキスト入力
-        InputTextBox.Text = "4mas 3svn 6mis 1svn";
+        // 初期テキスト入力（起動時は空白）
+        InputTextBox.Text = string.Empty;
 
         // リサイズデバウンスタイマーの設定 (連続リサイズ中の過剰なCanvas再描画を防止)
         _resizeDebounceTimer.Tick += (_, _) =>
