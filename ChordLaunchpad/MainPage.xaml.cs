@@ -64,6 +64,7 @@ public sealed partial class MainPage : Page
     private double _resizeStartPointerX;
     private double _resizeInitialBeats = 1.0;
     private double _resizePrevInitialBeats = 1.0;
+    private Border? _activeDragContainer;
 
     // タイムライン背景グリッド描画キャッシュ (不要な再描画とブラシ再生成の徹底防止)
     private double _lastGridMaxBeats;
@@ -956,12 +957,30 @@ public sealed partial class MainPage : Page
 
     // --- 左端リサイズ (開始点調整・シンコペーション / 前倒し) ---
 
+    private static T? FindVisualParent<T>(DependencyObject element) where T : DependencyObject
+    {
+        var parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(element);
+        while (parent != null)
+        {
+            if (parent is T typed) return typed;
+            parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(parent);
+        }
+        return null;
+    }
+
     private void LeftResizeGrip_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (sender is not FrameworkElement element || element.Tag is not string chordId) return;
 
         var chordIdx = _currentChords.FindIndex(c => c.Id == chordId);
         if (chordIdx < 0) return;
+
+        var cardBorder = FindVisualParent<Border>(element);
+        if (cardBorder != null && cardBorder.CanDrag)
+        {
+            _activeDragContainer = cardBorder;
+            cardBorder.CanDrag = false;
+        }
 
         e.Handled = true;
         _isResizingCard = true;
@@ -1064,6 +1083,13 @@ public sealed partial class MainPage : Page
 
         var chord = _currentChords.FirstOrDefault(c => c.Id == chordId);
         if (chord == null) return;
+
+        var cardBorder = FindVisualParent<Border>(element);
+        if (cardBorder != null && cardBorder.CanDrag)
+        {
+            _activeDragContainer = cardBorder;
+            cardBorder.CanDrag = false;
+        }
 
         e.Handled = true;
         _isResizingCard = true;
@@ -1224,6 +1250,12 @@ public sealed partial class MainPage : Page
             {
             }
 
+            if (_activeDragContainer != null)
+            {
+                _activeDragContainer.CanDrag = true;
+                _activeDragContainer = null;
+            }
+
             _isResizingCard = false;
             _isLeftResize = false;
             _resizingChordId = null;
@@ -1318,6 +1350,12 @@ public sealed partial class MainPage : Page
 
     private void ChordCard_DragStarting(UIElement sender, DragStartingEventArgs args)
     {
+        if (_isResizingCard)
+        {
+            args.Cancel = true;
+            return;
+        }
+
         if (sender is not FrameworkElement fe || fe.DataContext is not ChordCardItem item) return;
         args.Data.SetText($"timeline-chord:{item.Id}");
         args.Data.RequestedOperation = DataPackageOperation.Move;
@@ -3064,13 +3102,29 @@ public sealed partial class MainPage : Page
 
     private void ApplyInputButton_Click(object sender, RoutedEventArgs e) => ApplyInput();
 
+    private void InputTextBox_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Enter)
+        {
+            var ctrlState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
+            if (ctrlState.HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
+            {
+                e.Handled = true;
+                ApplyInput();
+            }
+        }
+    }
+
     private void InputTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Enter &&
-            Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
+        if (e.Key == VirtualKey.Enter)
         {
-            e.Handled = true;
-            ApplyInput();
+            var ctrlState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
+            if (ctrlState.HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down))
+            {
+                e.Handled = true;
+                ApplyInput();
+            }
         }
     }
 

@@ -612,75 +612,262 @@ public static partial class MusicEngine
         return (val, $"{num}/8", match.Groups[3].Success && !string.IsNullOrEmpty(match.Groups[3].Value));
     }
 
+    /// <summary>
+    /// 入力文字列の全角統一、アラビア数字列（4536や4-5-3-6）、ハイフン区切りコードの展開を行います
+    /// </summary>
+    public static string NormalizeAndPreprocessInput(string rawInput)
+    {
+        if (string.IsNullOrWhiteSpace(rawInput)) return string.Empty;
+
+        // 全角数字・全角パイプ・全角ハイフンの半角化
+        var normalized = rawInput
+            .Replace('１', '1').Replace('２', '2').Replace('３', '3').Replace('４', '4')
+            .Replace('５', '5').Replace('６', '6').Replace('７', '7').Replace('８', '8')
+            .Replace('｜', '|').Replace('ー', '-').Replace('−', '-').Replace('，', ',')
+            .Replace("\r", "");
+
+        // パイプがある場合は、小節境界を保持しつつ各小節内を前処理
+        if (normalized.Contains('|'))
+        {
+            var barSegments = normalized.Split('|');
+            var processedBars = new List<string>();
+            foreach (var seg in barSegments)
+            {
+                processedBars.Add(PreprocessBarSegment(seg));
+            }
+            return string.Join(" | ", processedBars);
+        }
+        else
+        {
+            // 改行がある場合、各行ごとに前処理
+            var lines = normalized.Split('\n');
+            var processedLines = new List<string>();
+            foreach (var line in lines)
+            {
+                processedLines.Add(PreprocessBarSegment(line));
+            }
+            return string.Join("\n", processedLines);
+        }
+    }
+
+    private static string PreprocessBarSegment(string segment)
+    {
+        var trimmed = segment.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return string.Empty;
+
+        // トークン分割（スペース・カンマで区切る）
+        var rawTokens = Regex.Split(trimmed, @"[\s,]+").Where(t => !string.IsNullOrEmpty(t)).ToList();
+        var expandedTokens = new List<string>();
+
+        foreach (var token in rawTokens)
+        {
+            // 1. 純粋な数字列 (例: "4536", "1625", "451") -> "4 5 3 6"
+            if (Regex.IsMatch(token, @"^[1-7]{2,8}$"))
+            {
+                expandedTokens.AddRange(token.Select(c => c.ToString()));
+                continue;
+            }
+
+            // 2. ハイフンで繋がれた数字列 (例: "4-5-3-6", "1-6-2-5") -> "4 5 3 6"
+            if (Regex.IsMatch(token, @"^[1-7](-[1-7])+$"))
+            {
+                var parts = token.Split('-');
+                expandedTokens.AddRange(parts);
+                continue;
+            }
+
+            // 3. ハイフンで繋がれたコード・ディグリー (例: "IV-V-iii-vi", "F-G-Em-Am", "4m-5-3m-6m")
+            // ただし "-" 単体や、末尾のハイフン等は除外
+            if (token.Contains('-') && !token.StartsWith('-') && !token.EndsWith('-'))
+            {
+                var subParts = token.Split('-');
+                if (subParts.Length > 1 && subParts.All(p => p.Length > 0 && IsValidChordToken(p)))
+                {
+                    expandedTokens.AddRange(subParts);
+                    continue;
+                }
+            }
+
+            expandedTokens.Add(token);
+        }
+
+        return string.Join(" ", expandedTokens);
+    }
+
+    public static bool IsValidChordToken(string token)
+    {
+        return IsArabicDegreeToken(token) ||
+               IsRomanToken(token) ||
+               ChordSymbolRegex().IsMatch(token) ||
+               RestTokenRegex().IsMatch(token);
+    }
+
+    /// <summary>
+    /// 小節内のコードスロット列に対して、拍数を適切に割り振ります
+    /// </summary>
+    private static List<(string Value, double Beats)> DistributeBarTokens(
+        List<string> slots,
+        double beatsPerBar,
+        int inputSlotsPerBar,
+        string timeSignature,
+        List<ParseError> errors)
+    {
+        var result = new List<(string Value, double Beats)>();
+        if (slots.Count == 0) return result;
+
+        // ハイフン（タイ・延長）が含まれる場合: 従来通りのスロットスナップ方式
+        if (slots.Contains("-"))
+        {
+            int[] candidateSlots = [inputSlotsPerBar, 4, 8, 12, 16];
+            var effectiveSlotCount = candidateSlots.FirstOrDefault(c => c >= slots.Count, slots.Count);
+            var slotBeats = beatsPerBar / effectiveSlotCount;
+
+            string? previousValue = null;
+            foreach (var slot in slots)
+            {
+                if (slot == "-")
+                {
+                    if (result.Count == 0)
+                    {
+                        errors.Add(new ParseError("-", "ハイフンの前にコードが必要です"));
+                        continue;
+                    }
+                    var last = result[^1];
+                    result[^1] = (last.Value, last.Beats + slotBeats);
+                    continue;
+                }
+
+                if (IsRepeatToken(slot))
+                {
+                    if (previousValue == null)
+                    {
+                        errors.Add(new ParseError(slot, "繰り返す前のコードがありません"));
+                        continue;
+                    }
+                    result.Add((previousValue, slotBeats));
+                    continue;
+                }
+
+                var explicitDuration = ParseExplicitDurationToken(slot);
+                if (explicitDuration != null)
+                {
+                    var b = ChordDurationBeats(explicitDuration.Value.Duration, timeSignature, explicitDuration.Value.Dotted);
+                    result.Add((explicitDuration.Value.Value, b));
+                    previousValue = explicitDuration.Value.Value;
+                    continue;
+                }
+
+                result.Add((slot, slotBeats));
+                previousValue = slot;
+            }
+            return result;
+        }
+
+        // 明示的音価（(2)/8 等）が含まれるトークンがあるかチェック
+        var hasExplicit = slots.Any(s => ParseExplicitDurationToken(s) != null);
+        if (hasExplicit)
+        {
+            var defaultBeats = beatsPerBar / slots.Count;
+            string? prevVal = null;
+            foreach (var s in slots)
+            {
+                var exp = ParseExplicitDurationToken(s);
+                if (exp != null)
+                {
+                    var b = ChordDurationBeats(exp.Value.Duration, timeSignature, exp.Value.Dotted);
+                    result.Add((exp.Value.Value, b));
+                    prevVal = exp.Value.Value;
+                }
+                else if (IsRepeatToken(s) && prevVal != null)
+                {
+                    result.Add((prevVal, defaultBeats));
+                }
+                else
+                {
+                    result.Add((s, defaultBeats));
+                    prevVal = s;
+                }
+            }
+            return result;
+        }
+
+        // タイや個別指定がない場合: 個数に応じた音楽的な等分・配分
+        int count = slots.Count;
+        if (count == 1)
+        {
+            result.Add((slots[0], beatsPerBar)); // 1小節全音符 (4拍)
+        }
+        else if (count == 2)
+        {
+            var half = beatsPerBar / 2.0; // 各2拍
+            result.Add((slots[0], half));
+            result.Add((slots[1], half));
+        }
+        else if (count == 3 && Math.Abs(beatsPerBar - 4.0) < 0.001)
+        {
+            // 4拍の小節に3コードの場合: 2拍, 1拍, 1拍 に割り当て (最も一般的)
+            result.Add((slots[0], 2.0));
+            result.Add((slots[1], 1.0));
+            result.Add((slots[2], 1.0));
+        }
+        else
+        {
+            var perBeats = beatsPerBar / count;
+            foreach (var s in slots)
+            {
+                result.Add((s, perBeats));
+            }
+        }
+
+        return result;
+    }
+
     private static (List<ParsedToken> Tokens, bool Structured, List<ParseError> Errors) TokenizeInput(
         string rawInput,
         string fallbackDuration,
         string timeSignature,
         int inputSlotsPerBar)
     {
-        var normalized = rawInput.Replace("\r", "");
+        var normalized = NormalizeAndPreprocessInput(rawInput);
         var beatsPerBar = double.Parse(timeSignature.Split('/')[0], CultureInfo.InvariantCulture);
 
-        if (BarSeparatorCheckRegex().IsMatch(normalized))
+        bool hasPipes = normalized.Contains('|');
+        bool hasLines = normalized.Contains('\n');
+
+        // パイプがある場合、または複数行のコード譜の場合: 小節構造としてパース
+        if (hasPipes || hasLines)
         {
-            var bars = BarSplitRegex().Split(normalized)
-                .Select(b => b.Trim())
-                .Where(b => b.Length > 0)
-                .ToList();
+            List<string> bars;
+            if (hasPipes)
+            {
+                // パイプ基準の小節分割
+                bars = normalized.Replace("\n", " ")
+                    .Split('|')
+                    .Select(b => b.Trim())
+                    .Where(b => b.Length > 0)
+                    .ToList();
+            }
+            else
+            {
+                // 改行基準の小節分割（複数行コード譜）
+                bars = normalized
+                    .Split('\n')
+                    .Select(b => b.Trim())
+                    .Where(b => b.Length > 0)
+                    .ToList();
+            }
 
             var structuredTokens = new List<ParsedToken>();
             var errors = new List<ParseError>();
             var pending = new List<(string Value, double Beats)>();
-            string? previousValue = null;
 
             foreach (var bar in bars)
             {
                 var slots = WhitespaceOrCommaSplitRegex().Split(bar).Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
                 if (slots.Count == 0) continue;
 
-                int[] candidateSlots = [inputSlotsPerBar, 4, 8, 12, 16];
-                var effectiveSlotCount = slots.Contains("-")
-                    ? candidateSlots.FirstOrDefault(c => c >= slots.Count, slots.Count)
-                    : slots.Count;
-
-                var slotBeats = beatsPerBar / effectiveSlotCount;
-
-                foreach (var slot in slots)
-                {
-                    if (slot == "-")
-                    {
-                        if (pending.Count == 0)
-                        {
-                            errors.Add(new ParseError("-", "ハイフンの前にコードが必要です"));
-                            continue;
-                        }
-                        var last = pending[^1];
-                        pending[^1] = (last.Value, last.Beats + slotBeats);
-                        continue;
-                    }
-
-                    if (IsRepeatToken(slot))
-                    {
-                        if (previousValue == null)
-                        {
-                            errors.Add(new ParseError(slot, "繰り返す前のコードがありません"));
-                            continue;
-                        }
-                        pending.Add((previousValue, slotBeats));
-                        continue;
-                    }
-
-                    var explicitDuration = ParseExplicitDurationToken(slot);
-                    if (explicitDuration != null)
-                    {
-                        pending.Add((explicitDuration.Value.Value, ChordDurationBeats(explicitDuration.Value.Duration, timeSignature, explicitDuration.Value.Dotted)));
-                        previousValue = explicitDuration.Value.Value;
-                        continue;
-                    }
-
-                    pending.Add((slot, slotBeats));
-                    previousValue = slot;
-                }
+                var distributed = DistributeBarTokens(slots, beatsPerBar, inputSlotsPerBar, timeSignature, errors);
+                pending.AddRange(distributed);
             }
 
             foreach (var entry in pending)
@@ -698,9 +885,35 @@ public static partial class MusicEngine
             return (structuredTokens, true, errors);
         }
 
+        // 単一行（パイプ・改行なし）の入力
         var tokens = new List<ParsedToken>();
         string? prevVal = null;
-        var parts = WhitespaceOrCommaSplitRegex().Split(normalized).Select(t => t.Trim()).Where(t => t.Length > 0);
+        var parts = WhitespaceOrCommaSplitRegex().Split(normalized).Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
+
+        // 4個などの一般的な個数の場合、小節等分（各1拍等）を適用可能か判定
+        if (parts.Count > 0 && !parts.Contains("-") && parts.All(p => ParseExplicitDurationToken(p) == null))
+        {
+            var errs = new List<ParseError>();
+            var distributed = DistributeBarTokens(parts, beatsPerBar, inputSlotsPerBar, timeSignature, errs);
+            var structuredTokens = new List<ParsedToken>();
+            bool allMapped = true;
+
+            foreach (var entry in distributed)
+            {
+                var mapped = DurationFromBeats(entry.Beats, timeSignature);
+                if (mapped == null)
+                {
+                    allMapped = false;
+                    break;
+                }
+                structuredTokens.Add(new ParsedToken(entry.Value, mapped.Value.Duration, true, mapped.Value.Dotted));
+            }
+
+            if (allMapped && structuredTokens.Count > 0)
+            {
+                return (structuredTokens, true, errs);
+            }
+        }
 
         foreach (var part in parts)
         {

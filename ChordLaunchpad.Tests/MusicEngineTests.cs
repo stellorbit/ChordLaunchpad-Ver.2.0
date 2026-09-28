@@ -216,4 +216,119 @@ public class MusicEngineTests
         Assert.Contains("Symbol", changedProperties);
         Assert.Contains("RomanNumeral", changedProperties);
     }
+
+    [Fact]
+    public void TestParseArabic_ContinuousWithoutSpace_4536()
+    {
+        // "4536" in C Major -> F, G, Em, Am (各1拍)
+        var result = MusicEngine.ParseProgression("4536", "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(4, result.Chords.Count);
+        Assert.Equal("F", result.Chords[0].Symbol);
+        Assert.Equal("G", result.Chords[1].Symbol);
+        Assert.Equal("Em", result.Chords[2].Symbol);
+        Assert.Equal("Am", result.Chords[3].Symbol);
+        Assert.Equal("1 beat", result.Chords[0].Duration);
+        Assert.Equal("1 beat", result.Chords[1].Duration);
+    }
+
+    [Fact]
+    public void TestParseArabic_HyphenSeparated_4_5_3_6()
+    {
+        // "4-5-3-6" in C Major -> F, G, Em, Am (各1拍)
+        var result = MusicEngine.ParseProgression("4-5-3-6", "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(4, result.Chords.Count);
+        Assert.Equal("F", result.Chords[0].Symbol);
+        Assert.Equal("G", result.Chords[1].Symbol);
+        Assert.Equal("Em", result.Chords[2].Symbol);
+        Assert.Equal("Am", result.Chords[3].Symbol);
+    }
+
+    [Fact]
+    public void TestParseStructuredInput_PipesDistributeBeats()
+    {
+        // "| 4 5 | 3 6 |" in C Major -> 2 beats each
+        var result = MusicEngine.ParseProgression("| 4 5 | 3 6 |", "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(4, result.Chords.Count);
+        Assert.Equal("F", result.Chords[0].Symbol);
+        Assert.Equal("2 beats", result.Chords[0].Duration);
+        Assert.Equal("G", result.Chords[1].Symbol);
+        Assert.Equal("2 beats", result.Chords[1].Duration);
+        Assert.Equal("Em", result.Chords[2].Symbol);
+        Assert.Equal("2 beats", result.Chords[2].Duration);
+        Assert.Equal("Am", result.Chords[3].Symbol);
+        Assert.Equal("2 beats", result.Chords[3].Duration);
+    }
+
+    [Fact]
+    public void TestParseStructuredInput_OneChordPerBar()
+    {
+        // "| 1 | 4 |" in C Major -> 1 bar (4 beats) each
+        var result = MusicEngine.ParseProgression("| 1 | 4 |", "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(2, result.Chords.Count);
+        Assert.Equal("C", result.Chords[0].Symbol);
+        Assert.Equal("1 bar", result.Chords[0].Duration);
+        Assert.Equal("F", result.Chords[1].Symbol);
+        Assert.Equal("1 bar", result.Chords[1].Duration);
+    }
+
+    [Fact]
+    public void TestParseStructuredInput_ContinuousNumbersInsidePipe()
+    {
+        // "| 4536 |" in C Major -> 1 beat each
+        var result = MusicEngine.ParseProgression("| 4536 |", "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(4, result.Chords.Count);
+        Assert.Equal("F", result.Chords[0].Symbol);
+        Assert.Equal("1 beat", result.Chords[0].Duration);
+        Assert.Equal("G", result.Chords[1].Symbol);
+        Assert.Equal("1 beat", result.Chords[1].Duration);
+        Assert.Equal("Em", result.Chords[2].Symbol);
+        Assert.Equal("1 beat", result.Chords[2].Duration);
+        Assert.Equal("Am", result.Chords[3].Symbol);
+        Assert.Equal("1 beat", result.Chords[3].Duration);
+    }
+
+    [Fact]
+    public void TestParseHyphenSeparatedChords_IV_V_iii_vi()
+    {
+        // "IV-V-iii-vi" in C Major -> F, G, Em, Am
+        var result = MusicEngine.ParseProgression("IV-V-iii-vi", "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(4, result.Chords.Count);
+        Assert.Equal("F", result.Chords[0].Symbol);
+        Assert.Equal("G", result.Chords[1].Symbol);
+        Assert.Equal("Em", result.Chords[2].Symbol);
+        Assert.Equal("Am", result.Chords[3].Symbol);
+    }
+
+    [Fact]
+    public void TestParseMultilineChordSheet()
+    {
+        // 複数行コード譜:
+        // C G
+        // Am Em
+        var sheet = "C G\nAm Em";
+        var result = MusicEngine.ParseProgression(sheet, "C", MusicalMode.Major, "1 bar");
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(4, result.Chords.Count);
+        Assert.Equal("C", result.Chords[0].Symbol);
+        Assert.Equal("2 beats", result.Chords[0].Duration);
+        Assert.Equal("G", result.Chords[1].Symbol);
+        Assert.Equal("2 beats", result.Chords[1].Duration);
+        Assert.Equal("Am", result.Chords[2].Symbol);
+        Assert.Equal("2 beats", result.Chords[2].Duration);
+        Assert.Equal("Em", result.Chords[3].Symbol);
+        Assert.Equal("2 beats", result.Chords[3].Duration);
+    }
 }
