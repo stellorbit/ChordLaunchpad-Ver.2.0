@@ -65,27 +65,11 @@ public sealed partial class ProjectFolderDialog : ContentDialog
         }
         else
         {
-            ProjectName = GenerateUniqueProjectName(ParentDirectory);
+            ProjectName = ChordLaunchpad.Core.ProjectFolderHelper.GenerateUniqueProjectName(ParentDirectory);
         }
 
         ProjectNameTextBox.Text = ProjectName;
         UpdatePreviewAndValidation();
-    }
-
-    private string GenerateUniqueProjectName(string parentDir)
-    {
-        var baseName = "MyProgression";
-        int index = 1;
-        while (true)
-        {
-            var name = $"{baseName}_{index:D2}";
-            var folder = Path.Combine(parentDir, name);
-            if (!Directory.Exists(folder))
-            {
-                return name;
-            }
-            index++;
-        }
     }
 
     private void ProjectNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -201,29 +185,7 @@ public sealed partial class ProjectFolderDialog : ContentDialog
 
         try
         {
-            // 親ディレクトリ作成（存在しない場合）
-            if (!Directory.Exists(ParentDirectory))
-            {
-                Directory.CreateDirectory(ParentDirectory);
-            }
-
-            // プロジェクト専用フォルダ作成
-            if (!Directory.Exists(TargetProjectDirectory))
-            {
-                Directory.CreateDirectory(TargetProjectDirectory);
-            }
-
-            // Project Backup フォルダ作成
-            if (!Directory.Exists(TargetBackupDirectory))
-            {
-                Directory.CreateDirectory(TargetBackupDirectory);
-            }
-
-            // Chord MIDI フォルダ作成
-            if (!Directory.Exists(TargetMidiDirectory))
-            {
-                Directory.CreateDirectory(TargetMidiDirectory);
-            }
+            ChordLaunchpad.Core.ProjectFolderHelper.CreateProjectStructure(ParentDirectory, ProjectName);
         }
         catch (Exception ex)
         {

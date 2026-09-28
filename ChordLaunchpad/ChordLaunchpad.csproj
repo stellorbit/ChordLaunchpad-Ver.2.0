@@ -21,10 +21,10 @@
     <SatelliteResourceLanguages>ja-JP;en-US</SatelliteResourceLanguages>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <!-- バージョン・製品情報 -->
-    <Version>2.0.0</Version>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
-    <Product>ChordLaunchpad Ver 2.0</Product>
+    <Version>2026.09</Version>
+    <AssemblyVersion>2026.9.0.0</AssemblyVersion>
+    <FileVersion>2026.9.0.0</FileVersion>
+    <Product>ChordLaunchpad Ver 2026.09</Product>
     <Description>コード進行生成支援アプリケーション</Description>
     <!-- XAML コンパイルのインクリメンタルキャッシュ有効化 -->
     <XamlCompilerSaveState>true</XamlCompilerSaveState>

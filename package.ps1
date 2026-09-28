@@ -14,6 +14,7 @@ $LauncherTemp = Join-Path $ScriptDir "launcher_temp"
 $PortableStage = Join-Path $ScriptDir "portable_stage"
 $MsixStageDir = Join-Path $ScriptDir "msix_stage"
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+$AppVersion = "2026.09"
 
 # 出力・作業ディレクトリの初期化
 if (Test-Path $DistDir) { Remove-Item -Recurse -Force $DistDir }
@@ -232,7 +233,7 @@ Write-Host "
 ========================================================" -ForegroundColor Yellow
 Write-Host " [Step 4/5] スリムポータブル版 ZIP を生成中..." -ForegroundColor Yellow
 Write-Host "========================================================" -ForegroundColor Yellow
-$PortableFolder = Join-Path $PortableStage "ChordLaunchpad_v2.0.0_Portable"
+$PortableFolder = Join-Path $PortableStage "ChordLaunchpad_v${AppVersion}_Portable"
 $AppFolder = Join-Path $PortableFolder "app"
 New-Item -ItemType Directory -Path $AppFolder | Out-Null
 
@@ -242,7 +243,7 @@ Copy-Item (Join-Path $LauncherTemp "ChordLaunchpad.Launcher.exe") (Join-Path $Po
 # README の配置
 $ReadmeContent = @"
 ========================================================================
- ChordLaunchpad Ver 2.0 (ポータブル版)
+ ChordLaunchpad Ver $AppVersion (ポータブル版)
 ========================================================================
 
 【起動方法】
@@ -262,7 +263,7 @@ Set-Content -Path (Join-Path $PortableFolder "はじめにお読みください.
 Copy-Item -Path "$PublishTemp\*" -Destination $AppFolder -Recurse -Force
 
 # ZIP 圧縮 (フォルダごと圧縮して解凍時に親フォルダが保持されるようにする)
-$ZipOutput = Join-Path $DistDir "ChordLaunchpad_v2.0.0_Portable_win-x64.zip"
+$ZipOutput = Join-Path $DistDir "ChordLaunchpad_v${AppVersion}_Portable_win-x64.zip"
 Compress-Archive -Path $PortableFolder -DestinationPath $ZipOutput -CompressionLevel Optimal
 Write-Host "✔ ポータブル版 ZIP 生成完了: $ZipOutput" -ForegroundColor DarkYellow
 
@@ -279,7 +280,7 @@ if (-not (Test-Path $ISCC)) {
 if (Test-Path $ISCC) {
     & $ISCC (Join-Path $ScriptDir "installer.iss")
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "✔ インストーラー生成完了: dist\ChordLaunchpad_v2.0.0_Setup.exe" -ForegroundColor DarkGreen
+        Write-Host "✔ インストーラー生成完了: dist\ChordLaunchpad_v${AppVersion}_Setup.exe" -ForegroundColor DarkGreen
     } else {
         Write-Error "Inno Setup のコンパイルに失敗しました。"
         exit 1
@@ -312,7 +313,7 @@ if ($PackageType -eq "All" -or $PackageType -eq "Msix") {
     if ($LASTEXITCODE -eq 0) {
         $GeneratedMsix = Get-ChildItem -Path $ScriptDir -Filter "*.msix" -Recurse | Where-Object { $_.FullName -like "*msix_stage*" } | Select-Object -First 1
         if ($GeneratedMsix) {
-            $DestMsix = Join-Path $DistDir "ChordLaunchpad_v2.0.0_x64.msix"
+            $DestMsix = Join-Path $DistDir "ChordLaunchpad_v${AppVersion}_x64.msix"
             Copy-Item $GeneratedMsix.FullName $DestMsix -Force
             Write-Host "✔ Microsoft Store 提出用 MSIX 生成完了: $DestMsix" -ForegroundColor DarkCyan
         } else {

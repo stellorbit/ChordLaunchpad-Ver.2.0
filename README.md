@@ -1,4 +1,4 @@
-# ChordLaunchpad Ver 2.0
+# ChordLaunchpad Ver 2026.09
 
 > **コード進行作成支援アプリケーション**  
 > 直感的なタイムライン、多彩な記法入力、豊富なテンプレート、そして DAW へのダイレクトな MIDI ドラッグ＆ドロップに対応した Windows 向けコード進行アシスタントツールです。
@@ -21,7 +21,7 @@ ChordLaunchpad は、作曲家・トラックメイカー・DTMer がコード�
 
 ディグリーネーム（ローマ数字）や短縮コマンドでの高速入力、拍や小節構造を反映したビジュアルタイムライン、内蔵シンセによる即時プレビュー、そして生成したコード進行をそのまま DAW（Studio One, Cubase, Pro Tools, Ableton Live, FL Studio 等）のトラックへドラッグ＆ドロップできる強力なワークフローを提供します。
 
-![ChordLaunchpad Ver 2.0 メイン画面](docs/images/app_screenshot.png)
+![ChordLaunchpad Ver 2026.09 メイン画面](docs/images/app_screenshot.png)
 
 ---
 
@@ -31,12 +31,12 @@ ChordLaunchpad は、作曲家・トラックメイカー・DTMer がコード�
 環境に合わせて以下の 2 種類の形式から選択いただけます（どちらも .NET ランタイム同梱で、事前インストール不要で動作します）。
 
 ### 1. インストーラー版（推奨）
-- ファイル名: `ChordLaunchpad_v2.0.0_Setup.exe`
+- ファイル名: `ChordLaunchpad_v2026.09_Setup.exe`
 - ダウンロードした EXE をダブルクリックしてウィザードに沿って進めるだけで、デスクトップおよびスタートメニューにショートカットが作成されます。
 - 管理者権限不要（ユーザー環境）で安全にインストールでき、Windows の「設定 > アプリ」からアンインストールも可能です。
 
 ### 2. ポータブル版（インストール不要）
-- ファイル名: `ChordLaunchpad_v2.0.0_Portable_win-x64.zip`
+- ファイル名: `ChordLaunchpad_v2026.09_Portable_win-x64.zip`
 - ZIP を任意のフォルダーに展開し、直下にある **`ChordLaunchpad.exe`** をダブルクリックするだけで即座に起動します。
 - システム DLL やリソースはすべて `app/` サブフォルダー内に整理・隔離されているため、フォルダー内がスッキリしています。
 

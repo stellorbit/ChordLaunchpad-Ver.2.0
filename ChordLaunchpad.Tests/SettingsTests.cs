@@ -21,6 +21,7 @@ public class SettingsTests
         Assert.Equal(5, settings.AutoSaveIntervalMinutes);
         Assert.Equal(10, settings.AutoSaveMaxBackups);
         Assert.False(settings.UseDefaultProjectDirectory);
+        Assert.False(settings.HasCompletedInitialSetup);
         Assert.Contains("ChordLaunchpad Projects", settings.DefaultProjectDirectory);
     }
 
@@ -136,5 +137,51 @@ public class SettingsTests
         Assert.Equal(@"C:\Users\Test\Documents\ChordLaunchpad Projects\FutureBass_Drop\FutureBass_Drop.chord", projectFile);
         Assert.Equal(@"C:\Users\Test\Documents\ChordLaunchpad Projects\FutureBass_Drop\Project Backup", backupDir);
         Assert.Equal(@"C:\Users\Test\Documents\ChordLaunchpad Projects\FutureBass_Drop\Chord MIDI", midiDir);
+    }
+
+    [Fact]
+    public void ProjectFolderHelper_GenerateUniqueProjectName_GeneratesNonEmptyString()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ChordTest_{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            var name1 = ChordLaunchpad.Core.ProjectFolderHelper.GenerateUniqueProjectName(tempDir);
+            Assert.Equal("MyProgression_01", name1);
+
+            // フォルダが存在する場合、インクリメントされるか
+            Directory.CreateDirectory(Path.Combine(tempDir, name1));
+            var name2 = ChordLaunchpad.Core.ProjectFolderHelper.GenerateUniqueProjectName(tempDir);
+            Assert.Equal("MyProgression_02", name2);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public void ProjectFolderHelper_CreateProjectStructure_CreatesDirectoriesCorrectly()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ChordTest_{Guid.NewGuid():N}");
+        try
+        {
+            var (projDir, projFile, backupDir, midiDir) = ChordLaunchpad.Core.ProjectFolderHelper.CreateProjectStructure(tempDir, "SongA");
+
+            Assert.True(Directory.Exists(projDir));
+            Assert.True(Directory.Exists(backupDir));
+            Assert.True(Directory.Exists(midiDir));
+            Assert.Equal("SongA.chord", Path.GetFileName(projFile));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
     }
 }

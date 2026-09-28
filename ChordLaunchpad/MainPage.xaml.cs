@@ -52,6 +52,8 @@ public sealed partial class MainPage : Page
     private readonly Stack<TimelineHistoryState> _redoStack = new();
 
     private string? _currentProjectPath;
+    private bool _isNewTransientProject = true;
+    private string? _initialAutoCreatedProjectPath;
     private readonly DispatcherTimer _autoSaveTimer = new();
 
     // グリッドスナップ単位（既定: 1拍）およびリサイズドラッグ状態
@@ -103,12 +105,13 @@ public sealed partial class MainPage : Page
         };
 
         // タイムライン描画の初期化 (Loaded イベントで1度だけまとめて初回構築)
-        Loaded += (_, _) =>
+        Loaded += async (_, _) =>
         {
             if (!_isInitialized)
             {
                 _isInitialized = true;
                 ApplyInput(saveUndo: false);
+                await InitializeStartupProjectAsync();
             }
             else
             {
@@ -2159,6 +2162,20 @@ public sealed partial class MainPage : Page
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {
+            // 以前の起動時自動生成フォルダが未保存のまま残っていた場合はクリーンアップ
+            if (_isNewTransientProject && !string.IsNullOrEmpty(_initialAutoCreatedProjectPath))
+            {
+                try
+                {
+                    var oldFolder = Path.GetDirectoryName(_initialAutoCreatedProjectPath);
+                    if (!string.IsNullOrEmpty(oldFolder) && Directory.Exists(oldFolder) && oldFolder != dialog.TargetProjectDirectory)
+                    {
+                        Directory.Delete(oldFolder, recursive: true);
+                    }
+                }
+                catch { /* 安全に無視 */ }
+            }
+
             SaveState();
             _currentChords.Clear();
             _sectionMarkers.Clear();
@@ -2168,6 +2185,8 @@ public sealed partial class MainPage : Page
             UpdateGuideAndSuggestions();
 
             _currentProjectPath = dialog.TargetProjectFilePath;
+            _initialAutoCreatedProjectPath = null;
+            _isNewTransientProject = false;
             // 初期プロジェクトファイルを書き出し
             await SaveToFileAsync(_currentProjectPath);
             StatusTextBlock.Text = isEn
@@ -2212,10 +2231,10 @@ public sealed partial class MainPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "ChordLaunchpad Ver 2.0",
+            Title = "ChordLaunchpad Ver 2026.09",
             Content = isEn
-                ? "Version 2.0.0 (WinUI 3 / Windows App SDK)\n\nDAW Integration, Modal Interchange & Modulation Support\nChord Progression Assistant & Creation App"
-                : "バージョン 2.0.0 (WinUI 3 / Windows App SDK)\n\nDAW連携・借用和音・転調セクション対応\nコード進行生成支援アプリケーション",
+                ? "Version 2026.09 (WinUI 3 / Windows App SDK)\n\nDAW Integration, Modal Interchange & Modulation Support\nChord Progression Assistant & Creation App"
+                : "バージョン 2026.09 (WinUI 3 / Windows App SDK)\n\nDAW連携・借用和音・転調セクション対応\nコード進行生成支援アプリケーション",
             CloseButtonText = "OK"
         };
         await dialog.ShowAsync();
@@ -2225,11 +2244,11 @@ public sealed partial class MainPage : Page
     // プロジェクト保存 / 読込
     // ==========================================
 
-    private ProjectData BuildCurrentProjectData()
+    private ProjectData BuildCurrentProjectData(string? explicitTitle = null)
     {
         return new ProjectData
         {
-            Title = string.IsNullOrEmpty(_currentProjectPath) ? "Chord Progression" : Path.GetFileNameWithoutExtension(_currentProjectPath),
+            Title = explicitTitle ?? (string.IsNullOrEmpty(_currentProjectPath) ? "Chord Progression" : Path.GetFileNameWithoutExtension(_currentProjectPath)),
             Key = CurrentKey,
             Mode = CurrentMode,
             Bpm = CurrentBpm,
@@ -2325,6 +2344,7 @@ public sealed partial class MainPage : Page
             var json = JsonSerializer.Serialize(project, AppJsonContext.Default.ProjectData);
             await File.WriteAllTextAsync(filePath, json);
             _currentProjectPath = filePath;
+            _isNewTransientProject = false;
             StatusTextBlock.Text = isEn
                 ? $"Project saved: {Path.GetFileName(filePath)}"
                 : $"プロジェクトを上書き保存しました: {Path.GetFileName(filePath)}";
@@ -2372,9 +2392,25 @@ public sealed partial class MainPage : Page
                 var rawProject = JsonSerializer.Deserialize(json, AppJsonContext.Default.ProjectData);
                 if (rawProject != null)
                 {
+                    // 以前の起動時自動生成フォルダが未保存のまま残っていた場合はクリーンアップ
+                    if (_isNewTransientProject && !string.IsNullOrEmpty(_initialAutoCreatedProjectPath))
+                    {
+                        try
+                        {
+                            var oldFolder = Path.GetDirectoryName(_initialAutoCreatedProjectPath);
+                            if (!string.IsNullOrEmpty(oldFolder) && Directory.Exists(oldFolder) && oldFolder != Path.GetDirectoryName(file.Path))
+                            {
+                                Directory.Delete(oldFolder, recursive: true);
+                            }
+                        }
+                        catch { /* 安全に無視 */ }
+                    }
+
                     var project = ProjectDataValidator.ValidateAndSanitize(rawProject);
                     SaveState();
                     _currentProjectPath = file.Path;
+                    _initialAutoCreatedProjectPath = null;
+                    _isNewTransientProject = false;
                     LoadProject(project);
                     bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
                     StatusTextBlock.Text = isEn
@@ -2389,6 +2425,141 @@ public sealed partial class MainPage : Page
             StatusTextBlock.Text = isEn
                 ? $"Load error: {ex.Message}"
                 : $"読込エラー: {ex.Message}";
+        }
+    }
+
+    // ==========================================
+    // 起動時プロジェクト自動生成 & 終了時保存確認
+    // ==========================================
+
+    private async Task InitializeStartupProjectAsync()
+    {
+        var settings = SettingsManager.Current;
+
+        // 初回起動時: 保存先フォルダー設定ダイアログを表示
+        if (!settings.HasCompletedInitialSetup)
+        {
+            var setupDialog = new InitialFolderSetupDialog { XamlRoot = this.XamlRoot };
+            await setupDialog.ShowAsync();
+            settings = SettingsManager.Current;
+        }
+
+        // 起動時に指定保存先配下にプロジェクト専用フォルダーを自動生成
+        try
+        {
+            var parentDir = !string.IsNullOrWhiteSpace(settings.DefaultProjectDirectory)
+                ? settings.DefaultProjectDirectory
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ChordLaunchpad Projects");
+
+            var projectName = ChordLaunchpad.Core.ProjectFolderHelper.GenerateUniqueProjectName(parentDir);
+            var (projectDir, projectFile, backupDir, midiDir) = ChordLaunchpad.Core.ProjectFolderHelper.CreateProjectStructure(parentDir, projectName);
+
+            var project = BuildCurrentProjectData(projectName);
+            var json = JsonSerializer.Serialize(project, AppJsonContext.Default.ProjectData);
+            await File.WriteAllTextAsync(projectFile, json);
+
+            _currentProjectPath = projectFile;
+            _initialAutoCreatedProjectPath = projectFile;
+            _isNewTransientProject = true;
+
+            bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
+            StatusTextBlock.Text = isEn
+                ? $"Project started: {projectName} ({projectDir})"
+                : $"新規プロジェクトを開始しました: {projectName} ({projectDir})";
+        }
+        catch (Exception ex)
+        {
+            bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
+            StatusTextBlock.Text = isEn
+                ? $"Project initialization note: {ex.Message}"
+                : $"プロジェクト初期化通知: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// ウィンドウ終了時の保存可否確認ダイアログを表示し、保存または破棄を実行します
+    /// </summary>
+    /// <returns>終了を続行する場合は true、キャンセルの場合は false</returns>
+    public async Task<bool> ConfirmExitAndHandleSaveAsync()
+    {
+        bool isEn = ChordLaunchpad.Core.LocalizationService.IsEnglish;
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = this.XamlRoot,
+            Title = isEn ? "Confirm Exit" : "終了時のプロジェクト保存確認",
+            PrimaryButtonText = isEn ? "Save & Exit" : "保存して終了",
+            SecondaryButtonText = isEn ? "Discard & Exit" : "保存せずに破棄して終了",
+            CloseButtonText = isEn ? "Cancel" : "キャンセル",
+            DefaultButton = ContentDialogButton.Primary
+        };
+
+        if (_isNewTransientProject)
+        {
+            var projectName = !string.IsNullOrEmpty(_currentProjectPath)
+                ? Path.GetFileNameWithoutExtension(_currentProjectPath)
+                : "MyProgression";
+            dialog.Content = isEn
+                ? $"The project '{projectName}' has not been saved.\n\nWould you like to save it before exiting?\nSelecting 'Discard & Exit' will delete the automatically created project folder."
+                : $"プロジェクト '{projectName}' はまだ保存されていません。\n\nプロジェクトを保存して終了しますか？\n「保存せずに破棄して終了」を選択すると、起動時に自動生成されたプロジェクトフォルダを破棄（削除）します。";
+        }
+        else
+        {
+            var projectName = !string.IsNullOrEmpty(_currentProjectPath)
+                ? Path.GetFileNameWithoutExtension(_currentProjectPath)
+                : "Project";
+            dialog.Content = isEn
+                ? $"Would you like to save changes to '{projectName}' before exiting?"
+                : $"プロジェクト '{projectName}' の変更を保存して終了しますか？\n「保存せずに破棄して終了」を選択すると、未保存の変更内容は破棄されます。";
+        }
+
+        ContentDialogResult result;
+        try
+        {
+            result = await dialog.ShowAsync();
+        }
+        catch (Exception)
+        {
+            // ダイアログ重複例外等の場合は安全に終了を許可
+            return true;
+        }
+
+        if (result == ContentDialogResult.Primary)
+        {
+            // 保存して終了
+            if (!string.IsNullOrEmpty(_currentProjectPath))
+            {
+                await SaveToFileAsync(_currentProjectPath);
+            }
+            _isNewTransientProject = false;
+            return true;
+        }
+        else if (result == ContentDialogResult.Secondary)
+        {
+            // 保存せずに破棄して終了
+            _autoSaveTimer.Stop();
+
+            if (_isNewTransientProject && !string.IsNullOrEmpty(_initialAutoCreatedProjectPath))
+            {
+                try
+                {
+                    var folderToDiscard = Path.GetDirectoryName(_initialAutoCreatedProjectPath);
+                    if (!string.IsNullOrEmpty(folderToDiscard) && Directory.Exists(folderToDiscard))
+                    {
+                        Directory.Delete(folderToDiscard, recursive: true);
+                    }
+                }
+                catch (Exception)
+                {
+                    // 削除例外時も終了を妨げない
+                }
+            }
+            return true;
+        }
+        else
+        {
+            // キャンセル: 終了を中断
+            return false;
         }
     }
 

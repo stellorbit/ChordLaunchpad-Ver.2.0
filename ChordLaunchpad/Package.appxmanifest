@@ -10,7 +10,7 @@
   <Identity
     Name="Stellorbit.ChordLaunchpad"
     Publisher="CN=5035B553-447F-4A5D-A9CF-2DC176508228"
-    Version="2.0.0.0" />
+    Version="2026.9.0.0" />
 
   <Properties>
     <DisplayName>ChordLaunchpad</DisplayName>

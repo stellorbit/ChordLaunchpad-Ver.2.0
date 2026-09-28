@@ -32,6 +32,32 @@ public sealed partial class MainWindow : Window
             presenter.IsMaximizable = false;
         }
 
+        bool isClosingConfirmed = false;
+        AppWindow.Closing += async (sender, args) =>
+        {
+            if (isClosingConfirmed)
+            {
+                return;
+            }
+
+            args.Cancel = true;
+
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                bool canClose = await mainPage.ConfirmExitAndHandleSaveAsync();
+                if (canClose)
+                {
+                    isClosingConfirmed = true;
+                    Close();
+                }
+            }
+            else
+            {
+                isClosingConfirmed = true;
+                Close();
+            }
+        };
+
         Closed += (_, _) =>
         {
             Audio.AudioEngine.Instance.Dispose();

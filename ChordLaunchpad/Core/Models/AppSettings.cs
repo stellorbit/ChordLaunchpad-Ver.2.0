@@ -50,6 +50,9 @@ public class AppSettings
     public string DefaultProjectDirectory { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
         "ChordLaunchpad Projects");
+
+    // 初回起動時のプロジェクト保存先フォルダー設定完了フラグ
+    public bool HasCompletedInitialSetup { get; set; } = false;
 }
 
 public static class SettingsManager
@@ -96,6 +99,8 @@ public static class SettingsManager
 
         return new AppSettings();
     }
+
+    public static void Save(AppSettings settings) => SaveSettings(settings);
 
     public static void SaveSettings(AppSettings settings)
     {
