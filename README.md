@@ -72,6 +72,7 @@ winget install Stellorbit.ChordLaunchpad
 ### 4. Microsoft Store 版
 Microsoft Storeからダウンロード可能です。
 更新直後は認定にタイムラグがあるため、最新版をすぐにダウンロードできない可能性があります。
+
 <a href="https://apps.microsoft.com/detail/9MXX63FMGK4S?referrer=appbadge&mode=full" target="_blank"  rel="noopener noreferrer">
 	<img src="https://get.microsoft.com/images/ja%20dark.svg" width="200"/>
 </a>
