@@ -317,6 +317,11 @@ public sealed partial class MainPage : Page
             return;
         }
 
+        if (raw.Length > ProjectDataValidator.MaxRawInputLength)
+        {
+            raw = raw[..ProjectDataValidator.MaxRawInputLength];
+        }
+
         var result = MusicEngine.ParseProgression(
             raw,
             CurrentKey,
@@ -327,10 +332,12 @@ public sealed partial class MainPage : Page
         );
 
         if (saveUndo) SaveState();
-        _currentChords = result.Chords.Select(c => c with
-        {
-            CardWidth = CalculateCardWidth(c.Duration, c.Dotted)
-        }).ToList();
+        _currentChords = result.Chords
+            .Take(ProjectDataValidator.MaxChordsCount)
+            .Select(c => c with
+            {
+                CardWidth = CalculateCardWidth(c.Duration, c.Dotted)
+            }).ToList();
 
         if (_currentChords.Count > 0)
         {
@@ -1330,6 +1337,8 @@ public sealed partial class MainPage : Page
         var text = await e.DataView.GetTextAsync();
         e.Handled = true;
 
+        if (string.IsNullOrWhiteSpace(text) || text.Length > 256) return;
+
         if (sender is not FrameworkElement fe || fe.DataContext is not ChordCardItem targetItem) return;
         var targetIndex = _currentChords.FindIndex(c => c.Id == targetItem.Id);
         if (targetIndex < 0) return;
@@ -1358,6 +1367,14 @@ public sealed partial class MainPage : Page
 
     private void InsertChordAt(string symbol, int index)
     {
+        if (string.IsNullOrWhiteSpace(symbol) || symbol.Length > ProjectDataValidator.MaxSymbolLength) return;
+
+        if (_currentChords.Count >= ProjectDataValidator.MaxChordsCount)
+        {
+            StatusTextBlock.Text = $"コード数が上限 ({ProjectDataValidator.MaxChordsCount}) に達しています";
+            return;
+        }
+
         var parsed = MusicEngine.ParseSymbolToken(symbol, CurrentKey, CurrentMode);
         if (parsed == null) return;
 
@@ -1392,6 +1409,8 @@ public sealed partial class MainPage : Page
         if (e.DataView.Contains(StandardDataFormats.Text))
         {
             var text = await e.DataView.GetTextAsync();
+            if (string.IsNullOrWhiteSpace(text) || text.Length > 256) return;
+
             SaveState();
             if (text.StartsWith("timeline-chord:"))
             {
@@ -2345,9 +2364,15 @@ public sealed partial class MainPage : Page
             if (file != null)
             {
                 var json = await FileIO.ReadTextAsync(file);
-                var project = JsonSerializer.Deserialize(json, AppJsonContext.Default.ProjectData);
-                if (project != null)
+                if (json.Length > 2 * 1024 * 1024)
                 {
+                    throw new InvalidOperationException("ファイルサイズが上限 (2MB) を超えています。");
+                }
+
+                var rawProject = JsonSerializer.Deserialize(json, AppJsonContext.Default.ProjectData);
+                if (rawProject != null)
+                {
+                    var project = ProjectDataValidator.ValidateAndSanitize(rawProject);
                     SaveState();
                     _currentProjectPath = file.Path;
                     LoadProject(project);
@@ -2492,8 +2517,8 @@ public sealed partial class MainPage : Page
                     var dialogResult = await exportDialog.ShowAsync();
                     if (dialogResult == ContentDialogResult.Primary)
                     {
-                        var fileName = fileNameTextBox.Text.Trim();
-                        if (string.IsNullOrEmpty(fileName)) fileName = defaultMidiName;
+                        var rawName = fileNameTextBox.Text.Trim();
+                        var fileName = SecurityPathHelper.SanitizeFileName(rawName, defaultMidiName);
                         if (!fileName.EndsWith(".mid", StringComparison.OrdinalIgnoreCase)) fileName += ".mid";
 
                         var targetMidiPath = Path.Combine(chordMidiDir, fileName);
@@ -2729,6 +2754,14 @@ public sealed partial class MainPage : Page
 
     private void AddChordToTimeline(string symbol)
     {
+        if (string.IsNullOrWhiteSpace(symbol) || symbol.Length > ProjectDataValidator.MaxSymbolLength) return;
+
+        if (_currentChords.Count >= ProjectDataValidator.MaxChordsCount)
+        {
+            StatusTextBlock.Text = $"コード数が上限 ({ProjectDataValidator.MaxChordsCount}) に達しています";
+            return;
+        }
+
         var parsed = MusicEngine.ParseSymbolToken(symbol, CurrentKey, CurrentMode);
         if (parsed == null) return;
 
@@ -3095,7 +3128,9 @@ public sealed partial class MainPage : Page
                 }
 
                 // 既存の同名バックアップファイルを取得（連番ソート）
-                var searchPattern = $"{baseName}_backup_*{extension}";
+                var safeBaseName = SecurityPathHelper.SanitizeFileName(baseName, "Untitled", 64).Replace("*", "_").Replace("?", "_");
+                var safeExtension = extension.StartsWith('.') ? extension : $".{extension}";
+                var searchPattern = $"{safeBaseName}_backup_*{safeExtension}";
                 var existingBackups = Directory.GetFiles(backupFolder, searchPattern)
                     .OrderBy(f => File.GetCreationTimeUtc(f))
                     .ToList();
@@ -3118,7 +3153,7 @@ public sealed partial class MainPage : Page
                     }
                 }
 
-                var backupName = $"{baseName}_backup_{nextNumber:D2}{extension}";
+                var backupName = $"{safeBaseName}_backup_{nextNumber:D2}{safeExtension}";
                 var backupPath = Path.Combine(backupFolder, backupName);
 
                 var json = JsonSerializer.Serialize(project, AppJsonContext.Default.ProjectData);

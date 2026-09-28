@@ -224,7 +224,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Bottom Action: Open Folder -->
-        <Button Grid.Row="2" Content="📁 ドキュメントフォルダを開く (F:\Codex\chord-draft\docs)" Click="OpenDocFolder_Click" HorizontalAlignment="Left" FontSize="11" Height="28" />
+        <!-- Bottom Action: Open Online Documentation -->
+        <Button Grid.Row="2" Content="🌐 オンラインドキュメント (GitHub) を開く" Click="OpenDocFolder_Click" HorizontalAlignment="Left" FontSize="12" Height="30" />
     </Grid>
 </ContentDialog>

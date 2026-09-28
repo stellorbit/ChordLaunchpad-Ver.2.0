@@ -27,18 +27,14 @@ public sealed partial class HelpDialog : ContentDialog
         }
     }
 
-    private void OpenDocFolder_Click(object sender, RoutedEventArgs e)
+    private async void OpenDocFolder_Click(object sender, RoutedEventArgs e)
     {
-        const string docPath = @"F:\Codex\chord-draft\docs";
+        const string docUrl = "https://github.com/stellorbit/ChordLaunchpad-Ver.2.0#readme";
         try
         {
-            if (Directory.Exists(docPath))
+            if (Uri.TryCreate(docUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = docPath,
-                    UseShellExecute = true
-                });
+                await Windows.System.Launcher.LaunchUriAsync(uri);
             }
         }
         catch { }

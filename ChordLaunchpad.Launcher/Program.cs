@@ -27,17 +27,24 @@ internal static class Program
 
             if (File.Exists(targetExe))
             {
-                var startInfo = new ProcessStartInfo(targetExe)
+                var fullTargetExe = Path.GetFullPath(targetExe);
+                var fullAppDir = Path.GetFullPath(appDir);
+
+                var startInfo = new ProcessStartInfo(fullTargetExe)
                 {
-                    WorkingDirectory = appDir,
-                    UseShellExecute = true
+                    WorkingDirectory = fullAppDir,
+                    UseShellExecute = false
                 };
 
                 if (args != null)
                 {
                     foreach (var arg in args)
                     {
-                        startInfo.ArgumentList.Add(arg);
+                        // 制御文字やNULL文字を含む不正引数を安全に除外
+                        if (!string.IsNullOrEmpty(arg) && !arg.Contains('\0') && arg.Length <= 4096)
+                        {
+                            startInfo.ArgumentList.Add(arg);
+                        }
                     }
                 }
 

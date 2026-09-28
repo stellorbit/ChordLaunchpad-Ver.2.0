@@ -151,12 +151,13 @@ public static class MidiBuilder
         }
         catch { }
 
-        if (!fileName.EndsWith(".mid", StringComparison.OrdinalIgnoreCase))
+        var safeFileName = SecurityPathHelper.SanitizeFileName(fileName, "progression.mid");
+        if (!safeFileName.EndsWith(".mid", StringComparison.OrdinalIgnoreCase))
         {
-            fileName += ".mid";
+            safeFileName += ".mid";
         }
 
-        var fullPath = Path.Combine(tempDir, $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{fileName}");
+        var fullPath = Path.Combine(tempDir, $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{safeFileName}");
         var bytes = BuildMidiBytes(chords, bpm, timeSignature, bassAddition, openVoicing);
         File.WriteAllBytes(fullPath, bytes);
         return fullPath;
