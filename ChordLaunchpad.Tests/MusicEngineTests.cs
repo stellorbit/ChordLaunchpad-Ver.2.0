@@ -194,4 +194,26 @@ public class MusicEngineTests
         var label = MusicEngine.DurationLabel(duration, dotted);
         Assert.Equal(expectedLabel, label);
     }
+
+    [Fact]
+    public void ChordCardItem_ModelUpdate_RaisesPropertyChangedForSymbolAndRomanNumeral()
+    {
+        // C Major での IVmaj7 (Fmaj7)
+        var parsed = MusicEngine.ParseSymbolToken("Fmaj7", "C", MusicalMode.Major)!;
+        var item = new ChordCardItem(parsed);
+
+        var changedProperties = new List<string>();
+        item.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != null) changedProperties.Add(e.PropertyName);
+        };
+
+        // Db Major へトランスポーズ (+1 半音 -> Gbmaj7)
+        var transposed = MusicEngine.TransposeChord(parsed, 1, "Db", MusicalMode.Major);
+        item.Model = transposed;
+
+        Assert.Equal("Gbmaj7", item.Symbol);
+        Assert.Contains("Symbol", changedProperties);
+        Assert.Contains("RomanNumeral", changedProperties);
+    }
 }

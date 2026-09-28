@@ -485,7 +485,7 @@
 
                                                         <!-- Top Row -->
                                                         <Grid Grid.Row="0">
-                                                            <TextBlock Text="{x:Bind Symbol}" FontSize="13" FontWeight="Bold"
+                                                            <TextBlock Text="{x:Bind Symbol, Mode=OneWay}" FontSize="13" FontWeight="Bold"
                                                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                                             <Button Click="DeleteCard_Click" Tag="{x:Bind Id}" ToolTipService.ToolTip="削除 (Backspace)"
@@ -496,7 +496,7 @@
                                                         </Grid>
 
                                                         <!-- Middle Row -->
-                                                        <TextBlock Grid.Row="1" Text="{x:Bind RomanNumeral}" FontSize="10"
+                                                        <TextBlock Grid.Row="1" Text="{x:Bind RomanNumeral, Mode=OneWay}" FontSize="10"
                                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                    TextTrimming="CharacterEllipsis" />
 
