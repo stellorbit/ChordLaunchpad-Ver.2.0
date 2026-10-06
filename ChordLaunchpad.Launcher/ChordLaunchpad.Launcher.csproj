@@ -7,9 +7,9 @@
     <PublishAot>true</PublishAot>
     <Nullable>enable</Nullable>
     <ApplicationIcon>..\ChordLaunchpad\Assets\AppIcon.ico</ApplicationIcon>
-    <Version>2026.9.0.1</Version>
-    <AssemblyVersion>2026.9.0.1</AssemblyVersion>
-    <FileVersion>2026.9.0.1</FileVersion>
+    <Version>2026.9.1</Version>
+    <AssemblyVersion>2026.9.1.0</AssemblyVersion>
+    <FileVersion>2026.9.1.0</FileVersion>
     <Product>ChordLaunchpad</Product>
     <Description>ChordLaunchpad Launcher</Description>
   </PropertyGroup>

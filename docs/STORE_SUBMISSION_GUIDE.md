@@ -48,7 +48,7 @@
   <Identity
     Name="Stellorbit.ChordLaunchpad"
     Publisher="CN=5035B553-447F-4A5D-A9CF-2DC176508228"
-    Version="2026.9.0.1" />
+    Version="2026.9.1.0" />
 
   <Properties>
     <DisplayName>ChordLaunchpad</DisplayName>
@@ -68,7 +68,7 @@ pwsh -File package.ps1
 `
 
 処理が完了すると、dist\ フォルダーに以下の提出用パッケージが生成されます：
-- **dist\ChordLaunchpad_v2026.9.0.1_x64.msix**
+- **dist\ChordLaunchpad_v2026.9.1_x64.msix**
 
 ※ Store 提出用パッケージには手元の署名は不要です（アップロード時に Microsoft のインフラによって自動署名されます）。
 
@@ -79,7 +79,7 @@ pwsh -File package.ps1
 1. パートナーセンターのアプリ管理画面で **「申請の開始 (Start your submission)」** をクリックします。
 2. 各項目を入力します：
    - **パッケージ (Packages)**:  
-     dist\ChordLaunchpad_v2026.9.0.1_x64.msix をドラッグ＆ドロップしてアップロードします。
+     dist\ChordLaunchpad_v2026.9.1_x64.msix をドラッグ＆ドロップしてアップロードします。
    - **価格と使用可能性 (Pricing and availability)**:  
      - 価格: 「無料 (Free)」
      - 提供地域: すべての国/地域

@@ -2360,10 +2360,10 @@ public sealed partial class MainPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "ChordLaunchpad Ver 2026.9.0.1",
+            Title = "ChordLaunchpad Ver 2026.9.1",
             Content = isEn
-                ? "Version 2026.9.0.1 (WinUI 3 / Windows App SDK)\n\nDAW Integration, Modal Interchange & Modulation Support\nChord Progression Assistant & Creation App"
-                : "バージョン 2026.9.0.1 (WinUI 3 / Windows App SDK)\n\nDAW連携・借用和音・転調セクション対応\nコード進行生成支援アプリケーション",
+                ? "Version 2026.9.1 (WinUI 3 / Windows App SDK)\n\nDAW Integration, Modal Interchange & Modulation Support\nChord Progression Assistant & Creation App"
+                : "バージョン 2026.9.1 (WinUI 3 / Windows App SDK)\n\nDAW連携・借用和音・転調セクション対応\nコード進行生成支援アプリケーション",
             CloseButtonText = "OK"
         };
         await dialog.ShowAsync();
