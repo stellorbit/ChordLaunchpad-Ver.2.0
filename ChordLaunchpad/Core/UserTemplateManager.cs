@@ -128,14 +128,8 @@ public class UserTemplateManager
         try
         {
             var filePath = StorageFilePath;
-            var dir = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-
             var json = JsonSerializer.Serialize(_userTemplates, AppJsonContext.Default.ListProgressionTemplate);
-            File.WriteAllText(filePath, json);
+            SecurityPathHelper.WriteAllTextAtomic(filePath, json);
         }
         catch
         {

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using ChordLaunchpad.Core;
 using ChordLaunchpad.Core.Models;
@@ -178,5 +180,85 @@ public class SecurityTests
         Assert.Equal(1, sanitized.Markers[0].InsertIndex);
         Assert.Equal(0, sanitized.Markers[1].InsertIndex); // 0 にクランプ
         Assert.Equal(2, sanitized.Markers[2].InsertIndex); // コード数 (2) にクランプ
+    }
+
+    // ==========================================
+    // Atomic Write Tests (データ破壊・電源断耐性対策)
+    // ==========================================
+
+    [Fact]
+    public void WriteAllTextAtomic_ShouldWriteNewFileCorrectly()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ChordLaunchpadTest_{Guid.NewGuid():N}");
+        try
+        {
+            var targetFile = Path.Combine(tempDir, "test_atomic.json");
+            var content = "{\"hello\":\"world\"}";
+
+            SecurityPathHelper.WriteAllTextAtomic(targetFile, content);
+
+            Assert.True(File.Exists(targetFile));
+            Assert.Equal(content, File.ReadAllText(targetFile));
+
+            // 一時ファイルが残っていないことを検証
+            var leftoverTmp = Directory.GetFiles(tempDir, "*.tmp_*");
+            Assert.Empty(leftoverTmp);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void WriteAllTextAtomic_ShouldOverwriteExistingFile()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ChordLaunchpadTest_{Guid.NewGuid():N}");
+        try
+        {
+            var targetFile = Path.Combine(tempDir, "existing.json");
+            SecurityPathHelper.WriteAllTextAtomic(targetFile, "old_content");
+
+            var newContent = "new_replaced_content";
+            SecurityPathHelper.WriteAllTextAtomic(targetFile, newContent);
+
+            Assert.Equal(newContent, File.ReadAllText(targetFile));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public async Task WriteAllTextAtomicAsync_ShouldWriteAndOverwriteCorrectly()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ChordLaunchpadTest_{Guid.NewGuid():N}");
+        try
+        {
+            var targetFile = Path.Combine(tempDir, "async_target.json");
+            var content1 = "async_initial";
+            var content2 = "async_overwritten";
+
+            await SecurityPathHelper.WriteAllTextAtomicAsync(targetFile, content1);
+            Assert.Equal(content1, await File.ReadAllTextAsync(targetFile));
+
+            await SecurityPathHelper.WriteAllTextAtomicAsync(targetFile, content2);
+            Assert.Equal(content2, await File.ReadAllTextAsync(targetFile));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void WriteAllTextAtomic_ShouldThrowOnInvalidPath(string? invalidPath)
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            SecurityPathHelper.WriteAllTextAtomic(invalidPath!, "data"));
     }
 }

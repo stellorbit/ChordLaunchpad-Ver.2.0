@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ChordLaunchpad.Core;
 
@@ -114,5 +115,63 @@ public static class SecurityPathHelper
         }
 
         return fileName;
+    }
+
+    /// <summary>
+    /// 同一ディレクトリ内に一時ファイルを作成して書き込み、アトミックに目的ファイルへ置換する安全なファイル書き込み（同期版）
+    /// </summary>
+    public static void WriteAllTextAtomic(string filePath, string content)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentNullException(nameof(filePath));
+
+        var fullPath = Path.GetFullPath(filePath);
+        var dir = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        var tempPath = Path.Combine(dir ?? string.Empty, $".{Path.GetFileName(fullPath)}.tmp_{Guid.NewGuid():N}");
+        try
+        {
+            File.WriteAllText(tempPath, content);
+            File.Move(tempPath, fullPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); } catch { /* 安全に無視 */ }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 同一ディレクトリ内に一時ファイルを作成して書き込み、アトミックに目的ファイルへ置換する安全なファイル書き込み（非同期版）
+    /// </summary>
+    public static async Task WriteAllTextAtomicAsync(string filePath, string content)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentNullException(nameof(filePath));
+
+        var fullPath = Path.GetFullPath(filePath);
+        var dir = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        var tempPath = Path.Combine(dir ?? string.Empty, $".{Path.GetFileName(fullPath)}.tmp_{Guid.NewGuid():N}");
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, content);
+            File.Move(tempPath, fullPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); } catch { /* 安全に無視 */ }
+            }
+        }
     }
 }

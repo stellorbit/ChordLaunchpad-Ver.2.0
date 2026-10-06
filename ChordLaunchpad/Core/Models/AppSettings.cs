@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using Windows.System;
+using ChordLaunchpad.Core;
 
 namespace ChordLaunchpad.Core.Models;
 
@@ -107,13 +108,8 @@ public static class SettingsManager
         try
         {
             _cachedSettings = settings;
-            if (!Directory.Exists(SettingsFolderPath))
-            {
-                Directory.CreateDirectory(SettingsFolderPath);
-            }
-
             var json = JsonSerializer.Serialize(settings, AppJsonContext.Default.AppSettings);
-            File.WriteAllText(SettingsFilePath, json);
+            SecurityPathHelper.WriteAllTextAtomic(SettingsFilePath, json);
         }
         catch
         {

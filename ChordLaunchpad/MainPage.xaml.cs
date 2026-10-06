@@ -2471,7 +2471,7 @@ public sealed partial class MainPage : Page
         {
             var project = BuildCurrentProjectData();
             var json = JsonSerializer.Serialize(project, AppJsonContext.Default.ProjectData);
-            await File.WriteAllTextAsync(filePath, json);
+            await SecurityPathHelper.WriteAllTextAtomicAsync(filePath, json);
             _currentProjectPath = filePath;
             _isNewTransientProject = false;
             StatusTextBlock.Text = isEn
