@@ -14,7 +14,7 @@ $LauncherTemp = Join-Path $ScriptDir "launcher_temp"
 $PortableStage = Join-Path $ScriptDir "portable_stage"
 $MsixStageDir = Join-Path $ScriptDir "msix_stage"
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-$AppVersion = "2026.09"
+$AppVersion = "2026.9.0.1"
 
 # 出力・作業ディレクトリの初期化
 if (Test-Path $DistDir) { Remove-Item -Recurse -Force $DistDir }

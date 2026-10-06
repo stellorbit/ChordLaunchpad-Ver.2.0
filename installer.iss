@@ -1,5 +1,5 @@
 #define MyAppName "ChordLaunchpad"
-#define MyAppVersion "2026.09"
+#define MyAppVersion "2026.9.0.1"
 #define MyAppPublisher "stellorbit"
 #define MyAppURL "https://github.com/stellorbit/ChordLaunchpad-Ver.2.0"
 #define MyAppExeName "ChordLaunchpad.exe"
@@ -16,7 +16,7 @@ DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=.\dist
-OutputBaseFilename=ChordLaunchpad_v2026.09_Setup
+OutputBaseFilename=ChordLaunchpad_v2026.9.0.1_Setup
 UninstallDisplayIcon={app}\{#MyAppExeName},0
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -31,7 +31,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "portable_stage\ChordLaunchpad_v2026.09_Portable\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "portable_stage\ChordLaunchpad_v2026.9.0.1_Portable\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app\Assets\AppIcon.ico"
